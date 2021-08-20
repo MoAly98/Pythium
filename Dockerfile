@@ -7,10 +7,10 @@ RUN		yum -y install which
 COPY 	./required_packages.txt .
 RUN pip3 install -r required_packages.txt
 RUN echo 'alias python="/usr/bin/python3"' >> ~/.bashrc
+ADD ./*.py .
 RUN useradd -m docker && \
     cp /root/.bashrc /home/docker/ && \
-    mkdir /home/docker/data && \
+    mkdir /home/docker/pythium && \
     chown -R --from=root docker /home/docker
 WORKDIR /home/docker/pythium
-ADD ./*.py .
 USER docker
