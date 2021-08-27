@@ -59,40 +59,40 @@ def combine_dicts(*, dicts):
 # print(paths)
 
 
-def get_branches_filter(branches_to_keep, branches_to_drop):
-    branches = []
-    positive_regex = '/('
-    for idx, branch in enumerate(branches_to_keep):
-        name = branch  # branch.name
-        if "*" in name and ".*" not in name:
-            name = name.replace("*", ".*")
+# def get_branches_filter(branches_to_keep, branches_to_drop):
+#     branches = []
+#     positive_regex = '/('
+#     for idx, branch in enumerate(branches_to_keep):
+#         name = branch  # branch.name
+#         if "*" in name and ".*" not in name:
+#             name = name.replace("*", ".*")
 
-        if idx == len(branches_to_keep)-1:
-            positive_regex += name
-        else:
-            positive_regex += name + '|'
-    positive_regex += ')/i'
-    branches.append(positive_regex)
+#         if idx == len(branches_to_keep)-1:
+#             positive_regex += name
+#         else:
+#             positive_regex += name + '|'
+#     positive_regex += ')/i'
+#     branches.append(positive_regex)
 
-    negative_regex = '/^((?!('
-    for idx, branch in enumerate(branches_to_drop):
-        name = branch  # branch.name
-        if "*" in name and ".*" not in name:
-            name = name.replace("*", ".*")
-        if idx == len(branches_to_drop)-1:
-            negative_regex += name
-        else:
-            negative_regex += name + '|'
+#     negative_regex = '/^((?!('
+#     for idx, branch in enumerate(branches_to_drop):
+#         name = branch  # branch.name
+#         if "*" in name and ".*" not in name:
+#             name = name.replace("*", ".*")
+#         if idx == len(branches_to_drop)-1:
+#             negative_regex += name
+#         else:
+#             negative_regex += name + '|'
 
-    negative_regex += ')).)*$/i'
+#     negative_regex += ')).)*$/i'
 
-    branches.append(negative_regex)
-    return branches
+#     branches.append(negative_regex)
+#     return branches
 
-branches_to_keep = ['*met*', '.*foxwolfram.*']
-branches_to_drop = ['*lepton*', '.*jets.*', 'branch1']
+# branches_to_keep = ['*met*', '.*foxwolfram.*']
+# branches_to_drop = ['*lepton*', '.*jets.*', 'branch1']
 
-filtered = get_branches_filter(branches_to_keep, branches_to_drop)
+# filtered = get_branches_filter(branches_to_keep, branches_to_drop)
 
-print(filtered)
+# print(filtered)
 

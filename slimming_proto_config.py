@@ -1,17 +1,17 @@
 # Prototype config
 from slimming_classes import Sample
-from commong_classes import Branch
+from common_classes import Branch
 
 
 common_branches = [
-					Branch('weight_mc', state='on'), Branch('runNumber', state='on'),
-					Branch('bdt_tH', state='on'),
+					Branch('weight_mc', status='on'), Branch('runNumber', status='on'),
+					Branch('BDT[:,0]', status='on'),
+					#Branch('*met*', status='on'), #Not Supported yet
 				  ]
 
 common_args = {
 			'common_branches': {
 								  'nominal_Loose':	common_branches,
-								  'sumWeights':		common_branches,
 								 },
 			'where_ntuples_at':	 ['/eos/atlas/atlascerngroupdisk/phys-higgs/HSG8/tH_v31_minintuples_v3/mc16a_nom/'],
 		}
@@ -19,7 +19,7 @@ common_args = {
 
 ttbar_file = Sample('ttbar', dsids=['410470_AFII_user.nbruscin.22889431._000017'], **common_args)
 
-
+sample_list = [ttbar_file]
 
 
 
