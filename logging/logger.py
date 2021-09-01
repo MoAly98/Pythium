@@ -1,4 +1,23 @@
 import logging
+import re
+
+ATTRIBUTES = dict(
+        list(zip([
+            'bold',
+            'dark',
+            '',
+            'underline',
+            'blink',
+            '',
+            'reverse',
+            'concealed'
+            ],
+            list(range(1, 9))
+            ))
+        )
+del ATTRIBUTES['']
+
+ATTRIBUTES_RE = '\033\[(?:%s)m' % '|'.join(['%d' % v for v in ATTRIBUTES.values()])
 
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
@@ -12,6 +31,7 @@ COLORS = {
 
 #These are the sequences need to get colored ouput
 RESET_SEQ = "\033[0m"
+RESET_RE = '\033\[0m'
 COLOR_SEQ = "\033[1;%dm"
 BOLD_SEQ = "\033[1m"
 
@@ -95,4 +115,7 @@ if __name__ == '__main__':
     logger.debug('test')
     logger.info('test')
     logger.critical('test')
-    print(ansi_art)
+    fmt_str = '\033[%dm%s'
+    text = re.sub(ATTRIBUTES_RE + '(.*?)' + RESET_RE, r'\1', ansi_art)
+    text = fmt_str % (ATTRIBUTES['blink'], text)
+    print(text+RESET_SEQ)
