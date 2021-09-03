@@ -1,7 +1,9 @@
 from slimming_proto_config import sample_list
+from common_tools import branch_expr_to_df_expr
 from argparse import ArgumentParser, ArgumentTypeError
 import uproot4 as uproot
-import awkward as ak
+import awkward1 as ak
+import pandas as pd
 # ==================================================================
 # Get arguments from CL
 # ==================================================================
@@ -32,6 +34,34 @@ import awkward as ak
 #     return parser.parse_args()
 
 
+print("""\
+MMMMMMMMMMMMMMMMNmdhhyyyyyyyyyhddmNMMMMMMMMMMMMMMM
+MMMMMMMMMMMMmdhyyyyyyyyyyyyyyyyyyyyyhmNMMMMMMMMMMM
+MMMMMMMMMNdyyyyyyyyyyyyyyyyyyyyyyyyyyyyhmMMMMMMMMM
+MMMMMMMmhyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyydMMMMMMM
+MMMMMNhyyyyyyyyyyyyyyyyyyydddhhhhhhhhhhhhhhdNMMMMM
+MMMMmyyyyyyyyyyyyyyyyyyyydMmoooyMMM++++//////oNMMM
+MMMdyyyyyyyyyyyyyyyyyyyyyNMo----dMN-----------/mMM
+MMdyyyyyyyyyyyyyyyyyyyyyyMM:----:NN------shy:--/NM
+MmyyyyyyyyyyyyyyyyyyyyyydMm------om-----/MMMy---/M
+NyyyyyyyyyyyyyyyyyyyyyyymMs-------s------+so:----y
+dyyyyyyyyyyyyyyyyyyyyyyyMM/----------------------:
+hyyyyyyyyyyyyyyyyyyyyyyhMm------------------------
+yyyyyyyyyyyyyyyyyyyyyyymMy------------------------
+yyyymMMdyyyyyyyyyyyyyyyMM/------------------------
+yyyyNMMdyyyyyhmNmyyyyyhMN-------------------------
+dyyyyyyyyydmNmhNMmyyyymMy------------------------:
+Nyyyyyhdmdho/:-+MMdyyyMM+------------------------s
+Mdyhdhyo::------oMMdyhMN------------------------/N
+MMd+:------------sMMhmMh-----------------------:mM
+MMN+--------------yMMMMo----------------------:dMM
+MMMNs--------------yMMM:---------------------+mMMM
+MMMMMd/-------------hMd--------------------:yNMMMM
+MMMMMMNy/------------ds------------------:omMMMMMM
+MMMMMMMMMh+-----------:----------------/ymMMMMMMMM
+MMMMMMMMMMMNh+:---------------------/sdMMMMMMMMMMM
+MMMMMMMMMMMMMMMmhs+/:---------:+oydNMMMMMMMMMMMMMM
+		""")
 for sample in sample_list:
 	for ntuple_args in sample.get_uproot_args():
 		files = ntuple_args.files
@@ -39,15 +69,37 @@ for sample in sample_list:
 		filter_name = ntuple_args.filter_name
 		stepsize = ntuple_args.stepsize
 		branches = ntuple_args.branches
-		print(filter_name)
-		for uproot_data in uproot.iterate(files, filter_name, cuts=cuts, step_size=stepsize):
-			print("Hi")
-			df = ak.to_pandas(uproot_data)
-			new_branches_long_names = [br.expression for br in branches if br.status == 'new']
-			new_branches_short_names = [br.name for br in branches if br.status == 'new']
-			for idx, long_name in enumerate(new_branches_long_names):
-				df.rename(columns={long_name: new_branches_short_names[idx]}, inplace=True)
-			print(df)
+		branches_from_expr = [br.name for br in branches if br.parent is not None]
+		branches_requested = [br.name for br in branches if br.parent is None]
+		branches_to_drop = set(branches_from_expr) - set(branches_requested)
+		branch_idxs = set([br.index for br in branches])
+		branches_by_idx = {br_idx: [branch.name for branch in branches if branch.index == br_idx and branch.status not in ['new', 'off']] for br_idx in branch_idxs}
+		new_branches_names = set([branch.parent.name for branch in branches if branch.parent is not None])
+
+		df_per_idx = []
+		for br_idx in branch_idxs:
+			batch_dfs = []
+			generator = uproot.iterate(files, filter_name=branches_by_idx[br_idx], step_size=stepsize, library='pd')
+			for tmp_df in generator:
+				if len(list(tmp_df.index.names)) == 1:
+					tmp_df.index.names = [br_idx]
+				else:
+					tmp_df.index.names = ['event', br_idx]
+				batch_dfs.append(tmp_df)
+			all_batches_df = pd.concat(batch_dfs)
+			df_per_idx.append(all_batches_df)
+
+		mega_df = df_per_idx[0]
+		for idx, df in enumerate(df_per_idx):
+			if idx == 0:
+				continue
+			mega_df = mega_df.join(df)
+
+		new_branches_expressions = list(set([branch.parent.expression for branch in branches if branch.parent is not None]))
+		for idx, new_br in enumerate(new_branches_names):
+			mega_df[new_br] = eval(branch_expr_to_df_expr('mega_df', new_branches_expressions[idx]))
+		mega_df.drop(columns=branches_to_drop, inplace=True)
+		print(mega_df)
 
 	# # Get the Uproot Arguments
 	# uproot_args = sample.get_uproot_args()

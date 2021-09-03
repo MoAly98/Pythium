@@ -10,7 +10,7 @@ to perform the slimming with Uproot4
 
 '''
 
-from common_tools import combine_dicts
+from common_tools import combine_dicts, branches_from_expr
 from common_classes import Branch
 
 
@@ -38,6 +38,7 @@ class NtupleFile:
 
 	def get_branches_filter(self, branches_to_keep, branches_to_drop, branches_to_make):
 		branches = []
+
 		for idx, branch in enumerate(branches_to_keep):
 			name = branch.name
 
@@ -63,9 +64,12 @@ class NtupleFile:
 			branches.append(branch)
 
 		for branch in branches_to_make:
-			recipe = br.expression
-			branch.set_filter(recipe)
-			branches.append(branch)
+			recipe = branch.expression
+			list_of_branches = branches_from_expr(recipe)
+			for component in list_of_branches:
+				new_br = Branch(component, status='on', parent=branch, index_by='event')
+				new_br.set_filter(component)
+				branches.append(new_br)
 		return branches
 
 
