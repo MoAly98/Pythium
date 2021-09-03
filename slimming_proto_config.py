@@ -4,9 +4,16 @@ from common_classes import Branch
 
 
 common_branches = [
-					Branch('weight_mc', status='on'), Branch('runNumber', status='on'),
-					Branch('BDT[:,0]', status='on'),
-					#Branch('*met*', status='on'), #Not Supported yet
+					# First index should always be the event
+					Branch('jets_pt', status='on', index_by='jet'),
+					Branch('jets_eta', status='on', index_by='jet'),
+					# Branch('bdt_tH', expression = BDT[:,0], status='on', index_by='event'),
+					Branch('dummy', expression='weight_mc*runNumber', status='new'),
+					Branch('leptons_pt', status='on', index_by='lep'),
+					Branch('BDT', status='on', index_by='bdt'),
+					Branch('ht_sq', status='new', expression='Ht**2', index_by='event'),
+					Branch('weight_mc', status='on', index_by='event'), 
+					Branch('runNumber', status='on', index_by='event'),
 				  ]
 
 common_args = {
