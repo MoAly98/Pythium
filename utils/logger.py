@@ -1,5 +1,6 @@
 import logging
 import re
+import sys
 
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
@@ -51,6 +52,11 @@ class ColoredFormatter(logging.Formatter):
             record.msg += RESET_SEQ
         return logging.Formatter.format(self, record)
 
+class ShutdownHandler(logging.StreamHandler):
+    def emit(self, record):
+        if record.levelno >= logging.ERROR:
+            sys.exit(1)
+
 class ColoredLogger(logging.Logger):
     def __init__(self, name=False):
         if name:
@@ -66,14 +72,15 @@ class ColoredLogger(logging.Logger):
         console.setFormatter(color_formatter)
 
         self.addHandler(console)
+        self.addHandler(ShutdownHandler())
         return
 
 logging.setLoggerClass(ColoredLogger)
 
 if __name__ == '__main__':
     logger = ColoredLogger()
-    logger.critical('WHY DO YOU DO THIS????')
-    logger.error('SOMEONE FUCKED UP')
-    logger.warning('DANGER DANGER!!')
     logger.debug('More verbose')
     logger.info('Info here')
+    logger.warning('DANGER DANGER!!')
+    logger.error('SOMEONE FUCKED UP')
+    logger.critical('WHY DO YOU DO THIS????')

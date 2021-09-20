@@ -1,5 +1,7 @@
 import logging
+import utils
 from utils.logger import ColoredLogger
+
 if __name__ == '__main__':
     logger = ColoredLogger()
     logger.setLevel(logging.INFO)
