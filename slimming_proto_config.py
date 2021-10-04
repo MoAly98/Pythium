@@ -5,15 +5,22 @@ from common_classes import Branch
 
 common_branches = [
 					# First index should always be the event
-					Branch('jets_pt', status='on', index_by='jet'),
+					# Branch('*jets*', status='off'),
+					# Branch('BDT', status='off'),
+					# Branch('*tau*', status='off'),
+					# Branch('*moment*', status='off'),
+					# Branch('*leptons*', status='off'),
+					# Branch('*BDT*', status='off'),
 					Branch('jets_eta', status='on', index_by='jet'),
-					# Branch('bdt_tH', expression = BDT[:,0], status='on', index_by='event'),
-					Branch('dummy', expression='weight_mc*runNumber', status='new'),
+					# # Branch('bdt_tH', expression = BDT[:,0], status='on', index_by='event'),
+					# Branch('dummy', expression='weight_mc*runNumber', status='new'),
 					Branch('leptons_pt', status='on', index_by='lep'),
 					Branch('BDT', status='on', index_by='bdt'),
+					Branch('jets_pt', status='on', index_by='jet'),
+					Branch('weighted_jet_pt', status='new', expression='jets_pt*weight_mc', index_by='jet*event'),
 					Branch('ht_sq', status='new', expression='Ht**2', index_by='event'),
-					Branch('weight_mc', status='on', index_by='event'), 
-					Branch('runNumber', status='on', index_by='event'),
+					Branch('weight_mc', status='on', index_by='event'),
+					# Branch('runNumber', status='on', index_by='event'),
 				  ]
 
 common_args = {
@@ -24,10 +31,9 @@ common_args = {
 		}
 
 
-ttbar_file = Sample('ttbar', dsids=['410470_AFII_user.nbruscin.22889431._000017'], **common_args)
+ttbar_file = Sample('ttbar', ids=['410470_AFII_user.nbruscin.22889431._000017'], **common_args)
 
 sample_list = [ttbar_file]
-
 
 
 

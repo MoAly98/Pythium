@@ -1,5 +1,4 @@
 
-
 def combine_dicts(*, dicts):
     from collections import defaultdict
     dd = defaultdict(list)
@@ -19,6 +18,14 @@ def branches_from_expr(expression):
                 if isinstance(node, ast.Name)]
     return branches
 
+
+def indexing_from_expr(expression):
+    import ast
+    parsed = ast.parse(expression)
+    indicies = [str(node.id)
+                for node in ast.walk(parsed)
+                if isinstance(node, ast.Name)]
+    return indicies
 
 def ops_from_expr(expression):
     import ast
@@ -41,7 +48,7 @@ def branch_expr_to_df_expr(df_name, expression):
                 if entry == ':':
                     expression = f'{df_name}.loc[(slice(None), 0), :]'
                     return expression
-                    #pass
+                    # pass
                 pass
     for branch in branches:
         expression = expression.replace(branch, f"{df_name}['{branch}']")
