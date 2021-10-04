@@ -1,9 +1,11 @@
 from slimming_proto_config import sample_list
+from example_slimming_config import sample_list
 from common_tools import branch_expr_to_df_expr
 from argparse import ArgumentParser, ArgumentTypeError
 import uproot4 as uproot
 import awkward1 as ak
 import pandas as pd
+import time
 # ==================================================================
 # Get arguments from CL
 # ==================================================================
@@ -36,9 +38,21 @@ import pandas as pd
 def run():
 	for sample in sample_list:
 		for ntuple_args in sample.get_uproot_args():
+			t1 = time.time()
 			slimmed_df = slimit(ntuple_args)
+			t2 = time.time()
+			print("Slimming time:", t2-t1)
+			slimmed_df.to_hdf('test.h5', key='branches')
+			t3 = time.time()
+			print("Dumping time:", t3-t2)
+			df_from_hdf = pd.read_hdf('test.h5', key='branches')
+			t4 = time.time()
+			print("Re-reading time:", t4-t3)
+			# If user dropping branches, will get back a list of dfs to avoid
+			# indexing problems
 			if(isinstance(slimmed_df, dict)):
 				# Do some sort of COMBO of individual branch dataframes
+				pass
 			else:
 				print('byebye')
 
@@ -50,8 +64,8 @@ def slimit(uproot_args):
 	filter_name = uproot_args.filter_name
 	extra_branches = uproot_args.extra_branches
 	new_branches = uproot_args.new_branches
-	if len(new_branches) != 0:
-		new_branches_names = [br.name for br in new_branches]
+	#if len(new_branches) != 0:
+	new_branches_names = [br.name for br in new_branches]
 	branches_by_index = uproot_args.branches_by_index
 	stepsize = uproot_args.stepsize
 
@@ -69,7 +83,7 @@ def slimit(uproot_args):
 	elif('None' in list(branches_by_index) and list(branches_by_index) != ['None']):
 		raise ValueError("Supplying branches to drop and branches to make at same time is not supported yet..")
 		exit(0)
-	# If we are only dealing with new/keep branches
+	# If we are only dealing with new/keep branches (04.10.21 this is the most complete part for MPhys)
 	else:
 		df_per_idx = []
 		for br_idx, br_filters in branches_by_index.items():

@@ -30,3 +30,9 @@ class Branch:
 	def set_name(self, name):
 		self.name = name
 # class Systematic:
+
+# Pythium DataFrame
+class PythiumDF:
+	def __init__(self, pandas_dataframe):
+		self.pd_df = pandas_dataframe
+	# Some methods to handle multindex dataframes needed
