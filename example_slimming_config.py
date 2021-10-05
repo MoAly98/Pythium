@@ -17,7 +17,6 @@ common_args = {
 			'where_ntuples_at':	 ['/eos/atlas/atlascerngroupdisk/phys-higgs/HSG8/tH_v31_minintuples_v3/mc16a_nom/'],
 		}
 
-
 ttbar_file = Sample('ttbar', ids=['410470_AFII_user.nbruscin.22889431._000017'], **common_args)
 
 sample_list = [ttbar_file]
