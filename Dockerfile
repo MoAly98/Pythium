@@ -12,5 +12,8 @@ RUN useradd -m docker && \
     mkdir /home/docker/pythium && \
     chown -R --from=root docker /home/docker
 WORKDIR /home/docker/pythium
-ADD ./*.py utils/*.py misc/*.py misc/*.png .
+COPY ./Trial_Data/ ./Trial_Data/
+COPY ./utils/ ./utils/
+COPY ./misc/ ./misc/
+ADD ./*.py utils/*.py misc/*.py misc/*.png ./
 USER docker
