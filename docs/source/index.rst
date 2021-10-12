@@ -10,8 +10,6 @@ Check out the :doc:`usage` section for further information.
 Contents
 --------
 
-.. toctree::
+.. toctree:: usage
 
-   usage
-
- Pythium has its documentation hosted on Read the Docs.
+Pythium has its documentation hosted on Read the Docs.
