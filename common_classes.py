@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 class Branch:
 
 	def __init__(self, name, status, expression='', index_by='event', parent=None):

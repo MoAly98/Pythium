@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 def combine_dicts(*, dicts):
     from collections import defaultdict
     dd = defaultdict(list)

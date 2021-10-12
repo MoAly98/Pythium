@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from slimming_proto_config import sample_list
 from example_slimming_config import sample_list
 from common_tools import branch_expr_to_df_expr

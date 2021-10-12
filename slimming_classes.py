@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 Author: Mohamed Aly
 Email: maly@cern.ch
@@ -15,19 +16,19 @@ from common_classes import Branch
 from utils.logger import ColoredLogger
 import sys
 
-'''
-For each sample, there will be a collection of Tree objects, one for each tree in the Sample.
-The Tree object will construct the full path to the files relevant for the given Sample, incl
-the TTree name added to end of path (/path/to/files:tree). The Tree object is also aware
-of the branches to keep, make or drop from its tree.. Based on the user specified branches, a regex
-filter to select/deselect a branch will be built.
-If a branch is new and constructed from an expression, the Tree object will breakdown the expr
-to extract the branches used to calculate it. The breakdown of expression assumes the branch names in
-the expression are exact -- no regex is allowed in expressions.
-'''
 
 
 class SampleTree:
+	"""
+	For each sample, there will be a collection of Tree objects, one for each tree in the Sample.
+	The Tree object will construct the full path to the files relevant for the given Sample, incl
+	the TTree name added to end of path (/path/to/files:tree). The Tree object is also aware
+	of the branches to keep, make or drop from its tree.. Based on the user specified branches, a regex
+	filter to select/deselect a branch will be built.
+	If a branch is new and constructed from an expression, the Tree object will breakdown the expr
+	to extract the branches used to calculate it. The breakdown of expression assumes the branch names in
+	the expression are exact -- no regex is allowed in expressions.
+	"""
 	# Constructor
 	def __init__(self, ntuples_dirs, ids, exclude_files=[], tree_name='', branches_to_keep=[], branches_to_drop=[], branches_to_make=[]):
 		# Get the paths to all files for the given sample

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Prototype config
 from slimming_classes import Sample
 from common_classes import Branch
