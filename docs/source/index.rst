@@ -10,6 +10,8 @@ Check out the :doc:`usage` section for further information.
 Contents
 --------
 
-.. toctree:: usage
+.. toctree::
+ usage
+ common_classes
 
 Pythium has its documentation hosted on Read the Docs.
