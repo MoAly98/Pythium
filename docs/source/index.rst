@@ -7,10 +7,6 @@ The name "Pythium" is inspired by a genus of parasites which attacks the *roots*
 
 Check out the :doc:`usage` section for further information.
 
-.. note::
-
-   This project is under active development.
-
 Contents
 --------
 
