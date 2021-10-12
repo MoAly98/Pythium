@@ -11,11 +11,11 @@ Check out the :doc:`usage` section for further information.
 
    This project is under active development.
 
-   Contents
-   --------
+Contents
+--------
 
-   .. toctree::
+.. toctree::
 
    usage
 
-    Pythium has its documentation hosted on Read the Docs.
+ Pythium has its documentation hosted on Read the Docs.
