@@ -3,7 +3,7 @@
 
 # -- Project information
 
-project = 'Pythium'
+project = 'pythium'
 copyright = '2021, UoM,ATLAS'
 author = 'Mohamed Aly'
 
