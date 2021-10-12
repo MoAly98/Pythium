@@ -1,5 +1,5 @@
 Common Classes module
 =============
 
-.. automodule:: pythium.common_classes
+.. automodule:: scripts.common_classes
    :members:
