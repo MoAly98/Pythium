@@ -9,7 +9,8 @@ author = 'Mohamed Aly'
 
 release = '0.1'
 version = '0.1.0'
-
+import os,sys
+sys.path.insert(0, os.path.abspath(‘../../scripts/’))
 # -- General configuration
 
 extensions = [
@@ -18,6 +19,7 @@ extensions = [
                     'sphinx.ext.autodoc',
                         'sphinx.ext.autosummary',
                             'sphinx.ext.intersphinx',
+                            'sphinx.ext.napoleon'
                             ]
 
 intersphinx_mapping = {
