@@ -12,6 +12,6 @@ Contents
 
 .. toctree::
  usage
- common_classes
+ CommonClasses
 
 Pythium has its documentation hosted on Read the Docs.
