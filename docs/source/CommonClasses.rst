@@ -1,5 +1,5 @@
 Common Classes module
 =============
 
-.. automodule:: scripts.common_classes
+.. automodule:: common_classes
    :members:
