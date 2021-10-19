@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 # Prototype config
-from slimming_classes import Sample
-from common_classes import Branch
+import os, sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
+sys.path.append(os.path.dirname(parentdir))
+from sklimming.slimming_classes import Sample
+from common.common_classes import Branch
 
 common_branches = [
 					Branch('leptons_pt', status='on', index_by='lep'),
