@@ -6,6 +6,9 @@ RUN 	pip3 install --upgrade pip
 RUN		yum -y install which
 COPY 	./required_packages.txt .
 RUN pip3 install -r required_packages.txt
+RUN pip3 install dask[complete]
+RUN pip3 install nodejs
+RUN pip3 install jupyterlab
 RUN echo 'alias python="/usr/bin/python3"' >> ~/.bashrc
 RUN useradd -m docker && \
     cp /root/.bashrc /home/docker/ && \
@@ -15,5 +18,8 @@ WORKDIR /home/docker/pythium
 COPY ./Trial_Data/ ./Trial_Data/
 COPY ./utils/ ./utils/
 COPY ./misc/ ./misc/
+RUN mkdir ./Brian_code
+COPY ./fromBrian/ ./Brian_code/
 ADD ./*.py utils/*.py misc/*.py misc/*.png ./
+RUN chown -R --from=root docker /home/docker
 USER docker
