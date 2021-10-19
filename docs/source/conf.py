@@ -17,10 +17,10 @@ extensions = [
             'sphinx.ext.duration',
                 'sphinx.ext.doctest',
                     'sphinx.ext.autodoc',
-                      'sphinx-autodoc-annotation',
                         'sphinx.ext.autosummary',
                             'sphinx.ext.intersphinx',
-                            'sphinx.ext.napoleon'
+                            'sphinx.ext.napoleon',
+                            'sphinx-autodoc-annotation'
                             ]
 
 intersphinx_mapping = {
