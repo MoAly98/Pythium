@@ -12,8 +12,7 @@ RUN useradd -m docker && \
     mkdir /home/docker/pythium && \
     chown -R --from=root docker /home/docker
 WORKDIR /home/docker/pythium
-run mkdir utils misc
-ADD ./*.py .
-ADD ./utils/*.py ./utils/
+run mkdir scripts misc
+ADD ./scripts/ ./scripts/
 ADD ./misc/*.py ./misc/*.png ./misc/
 USER docker
