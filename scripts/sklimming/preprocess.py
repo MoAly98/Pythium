@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-from slimming_proto_config import sample_list
-from example_slimming_config import sample_list
-from common_tools import branch_expr_to_df_expr
+import os,sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
+#from configs.slimming_proto_config import sample_list
+from configs.example_slimming_config import sample_list
+from common.common_tools import branch_expr_to_df_expr
 from argparse import ArgumentParser, ArgumentTypeError
 import uproot4 as uproot
 import awkward1 as ak

@@ -11,10 +11,12 @@ to perform the slimming with Uproot4
 
 '''
 # Pre-defined tools and classes which are needed for slimming
-from common_tools import combine_dicts, branches_from_expr, indexing_from_expr
-from common_classes import Branch
-from utils.logger import ColoredLogger
-import sys
+import os,sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+from common.common_tools import combine_dicts, branches_from_expr, indexing_from_expr
+from common.common_classes import Branch
+from common.logger import ColoredLogger
 
 
 
