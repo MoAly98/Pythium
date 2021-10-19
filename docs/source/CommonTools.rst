@@ -1,5 +1,5 @@
 Common Tools module
 ===================
 
-.. automodule:: common_tools
+.. automodule:: common.common_tools
    :members:
