@@ -26,7 +26,7 @@ def combine_dicts(*, dicts):
     return dict(dd)
 
 
-def branches_from_expr(expression):
+def branches_from_expr(expression)-> 'list':
     import ast
     parsed = ast.parse(expression)
     branches = [str(node.id)
