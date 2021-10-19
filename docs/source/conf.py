@@ -17,6 +17,7 @@ extensions = [
             'sphinx.ext.duration',
                 'sphinx.ext.doctest',
                     'sphinx.ext.autodoc',
+                      'sphinx-autodoc-annotation',
                         'sphinx.ext.autosummary',
                             'sphinx.ext.intersphinx',
                             'sphinx.ext.napoleon'
