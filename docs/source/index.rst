@@ -13,4 +13,8 @@ Contents
 .. toctree::
  usage
  CommonTools
+ CommonClasses
+ SklimmingClasses
+ Logging
+ Preprocessing
 
