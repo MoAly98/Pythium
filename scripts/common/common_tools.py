@@ -27,6 +27,13 @@ def combine_dicts(*, dicts):
 
 
 def branches_from_expr(expression)-> 'list':
+    """Do something.
+
+    Parameters
+    ----------
+    expression : string
+       This is the mathematical expression that defines a new branch
+    """
     import ast
     parsed = ast.parse(expression)
     branches = [str(node.id)
