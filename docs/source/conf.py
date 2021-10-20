@@ -3,13 +3,14 @@
 
 # -- Project information
 
-project = 'Pythium'
+project = 'pythium'
 copyright = '2021, UoM,ATLAS'
 author = 'Mohamed Aly'
 
 release = '0.1'
 version = '0.1.0'
-
+import os,sys
+sys.path.insert(0, os.path.abspath('../../scripts/'))
 # -- General configuration
 
 extensions = [
@@ -18,6 +19,8 @@ extensions = [
                     'sphinx.ext.autodoc',
                         'sphinx.ext.autosummary',
                             'sphinx.ext.intersphinx',
+                            'sphinx.ext.napoleon'
+                            #'sphinx_autodoc_annotation'
                             ]
 
 intersphinx_mapping = {
@@ -31,6 +34,6 @@ templates_path = ['_templates']
 # -- Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
-
+html_logo = '../../misc/pythium_logo.png'
 # -- Options for EPUB output
 epub_show_urls = 'footnote'

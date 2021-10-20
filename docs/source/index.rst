@@ -5,19 +5,14 @@ Welcome to Pythium's documentation!
 
 The name "Pythium" is inspired by a genus of parasites which attacks the *roots* of crops. Name and logo credits go to Callum Birch-Sykes
 
-Check out the :doc:`usage` section for further information, including
-how to :ref:`installation` the project.
+Check out the :doc:`usage` section for further information.
 
-.. note::
+Contents
+--------
 
-   This project is under active development.
-
-   Contents
-   --------
-
-   .. toctree::
-
-   usage
-   api
-
-    Pythium has its documentation hosted on Read the Docs.
+.. toctree::
+ usage
+ CommonTools
+ CommonClasses
+ SklimmingClasses
+ Logging

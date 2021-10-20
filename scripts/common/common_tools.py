@@ -10,7 +10,17 @@ def combine_dicts(*, dicts):
     return dict(dd)
 
 
-def branches_from_expr(expression):
+def branches_from_expr(expression: str) -> 'list':
+    """
+    Function to extract branches needed to build a new branch
+    
+    Args:
+        expression: This is the mathematical expression that defines a new branch
+
+    Returns:
+        A list of branch names needed for calculating new branch
+
+    """
     import ast
     parsed = ast.parse(expression)
     branches = [str(node.id)
