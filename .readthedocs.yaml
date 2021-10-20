@@ -4,7 +4,7 @@ python:
     version: "3.8"
     install:
       - method: pip -r
-        path: ./docs/reqs.txt 
+        requirements: ./docs/reqs.txt 
 sphinx:
     fail_on_warning: true
 
