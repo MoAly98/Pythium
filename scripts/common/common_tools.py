@@ -26,13 +26,14 @@ def combine_dicts(*, dicts):
     return dict(dd)
 
 
-def branches_from_expr(expression)-> 'list':
-    """Do something.
+def branches_from_expr(expression: string)-> 'list':
+    """
+    Args:
+        expression: This is the mathematical expression that defines a new branch
 
-    Parameters
-    ----------
-    expression : string
-       This is the mathematical expression that defines a new branch
+    Returns:
+        A list of branch names needed for calculating new branch
+
     """
     import ast
     parsed = ast.parse(expression)
