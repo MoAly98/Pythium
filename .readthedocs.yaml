@@ -4,6 +4,4 @@ python:
     version: "3.8"
     install:
       - requirements: ./docs/reqs.txt 
-sphinx:
-    fail_on_warning: true
 
