@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 def combine_dicts(*, dicts):
+    """
+    function to combine dictionaries from a list by key
 
+    This function will add rows to dict columns which exist
+    in all dataframes
+
+    Parameters
+    ----------
+    dicts : list
+       This is the list of dictionaries to be combined
+
+    Returns
+    -------
+    dict
+        Retruns a merged dictionary
+    """
     from collections import defaultdict
     dd = defaultdict(list)
     if not isinstance(dicts, list) or len(dicts) < 2:
@@ -13,6 +28,8 @@ def combine_dicts(*, dicts):
 
 def branches_from_expr(expression: str) -> 'list':
     """
+    Function to extract branches needed to build a new branch
+    
     Args:
         expression: This is the mathematical expression that defines a new branch
 
