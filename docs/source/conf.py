@@ -20,7 +20,7 @@ extensions = [
                         'sphinx.ext.autosummary',
                             'sphinx.ext.intersphinx',
                             'sphinx.ext.napoleon',
-                            'sphinx-autodoc-annotation'
+                            'sphinx_autodoc_annotation'
                             ]
 
 intersphinx_mapping = {
