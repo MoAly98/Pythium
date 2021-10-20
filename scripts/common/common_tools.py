@@ -26,7 +26,7 @@ def combine_dicts(*, dicts):
     return dict(dd)
 
 
-def branches_from_expr(expression: string)-> 'list':
+def branches_from_expr(expression: str)-> 'list':
     """
     Args:
         expression: This is the mathematical expression that defines a new branch
