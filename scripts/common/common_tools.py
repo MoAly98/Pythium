@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-def combine_dicts(*, dicts):
+def combine_dicts(*, dicts:list) -> dict:
+    """
+    Combining row-wise python dictionaries which have identical columns
+    
+    Args:
+        dicts: A required keyword argument with a list of dictionaries to combine
+
+    Returns:
+        A combined dictionary
+
+    """
     from collections import defaultdict
     dd = defaultdict(list)
     if not isinstance(dicts, list) or len(dicts) < 2:
