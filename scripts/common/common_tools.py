@@ -39,13 +39,15 @@ def branches_from_expr(expression: str) -> 'list':
     return branches
 
 
-def indexing_from_expr(expression):
+def indexing_from_expr(expression: str) -> 'list':
     """ Get dataframe sub-indices needed for making new branch
 
     To save a new branch that depends on jagged branches, the name of the dataframe sub-indicies
     to be used for jagged branches is extracted from a mathematical expression
     equivalent to the one passed to :func:`~common.common_tools.branches_from_expr`
-    but replaces branch names with index names
+    but replaces branch names with index names.
+
+    AST is used to parse the string, and any :class:`ast.Name` object is considered a branch.
     
 
     Todo:
@@ -66,7 +68,17 @@ def indexing_from_expr(expression):
                 if isinstance(node, ast.Name)]
     return indicies
 
-def ops_from_expr(expression):
+def ops_from_expr(expression: str) -> 'list':
+    """
+    Function to extract operators needed to build a new branch from a formula.
+    
+    Args:
+        expression: This is the mathematical expression that defines a new branch
+
+    Returns:
+        A (sorted) list of operators names needed for calculating new branch 
+
+    """
     import ast
     parsed = ast.parse(expression)
     br = ['1']
