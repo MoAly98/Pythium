@@ -45,9 +45,8 @@ def indexing_from_expr(expression: str) -> 'list':
     To save a new branch that depends on jagged branches, the name of the dataframe sub-indicies
     to be used for jagged branches is extracted from a mathematical expression
     equivalent to the one passed to :func:`~common.common_tools.branches_from_expr`
-    but replaces branch names with index names.
-
-    AST is used to parse the string, and any :class:`ast.Name` object is considered a branch.
+    but replaces branch names with index names. AST is used to parse the string, and any :class:`ast.Name` 
+    object is considered a branch.
     
 
     Todo:
