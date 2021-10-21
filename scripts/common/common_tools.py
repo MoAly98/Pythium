@@ -40,6 +40,25 @@ def branches_from_expr(expression: str) -> 'list':
 
 
 def indexing_from_expr(expression):
+    """ Get dataframe sub-indices needed for making new branch
+
+    To save a new branch that depends on jagged branches, the name of the dataframe sub-indicies
+    to be used for jagged branches is extracted from a mathematical expression
+    equivalent to the one passed to :func:`~common.common_tools.branches_from_expr`
+    but replaces branch names with index names
+    
+
+    Todo:
+        * Add support to expressions including multiple jagged branches when this is used
+    
+    Args:
+        expression: This is the mathematical expression that defines a new branch but using index names instead
+                    of constiuent branch names
+
+    Returns:
+        A list of dataframe index names needed for saving the new branch
+
+    """
     import ast
     parsed = ast.parse(expression)
     indicies = [str(node.id)

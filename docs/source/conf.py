@@ -19,8 +19,8 @@ extensions = [
                     'sphinx.ext.autodoc',
                         'sphinx.ext.autosummary',
                             'sphinx.ext.intersphinx',
-                            'sphinx.ext.napoleon'
-                            #'sphinx_autodoc_annotation'
+                            'sphinx.ext.napoleon',
+                            'sphinx.ext.todo'
                             ]
 
 intersphinx_mapping = {
