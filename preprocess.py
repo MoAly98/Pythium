@@ -42,10 +42,10 @@ def run():
 			slimmed_df = slimit(ntuple_args)
 			t2 = time.time()
 			print("Slimming time:", t2-t1)
-			slimmed_df.to_hdf('test.h5', key='branches')
+			slimmed_df.to_hdf('Skl_Data/test.h5', key='branches')
 			t3 = time.time()
 			print("Dumping time:", t3-t2)
-			df_from_hdf = pd.read_hdf('test.h5', key='branches')
+			df_from_hdf = pd.read_hdf('Skl_Data/test.h5', key='branches')
 			t4 = time.time()
 			print("Re-reading time:", t4-t3)
 			# If user dropping branches, will get back a list of dfs to avoid
