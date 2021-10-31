@@ -17,7 +17,7 @@ common_args = {
 			'where_ntuples_at':	 ['/afs/cern.ch/user/k/kmalirz/pythium/Trial_Data/'],
 		}
 
-ttbar_file = Sample('ttbar', ids=['410470_AFII_user.nbruscin.22889431._000017'], **common_args)
+ttbar_file = Sample('ttbar', ids=['410470_AFII_user.nbruscin.22889431._000017.output.root'], **common_args)
 
 sample_list = [ttbar_file]
 
