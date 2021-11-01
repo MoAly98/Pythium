@@ -1,7 +1,6 @@
 import os
 import sys
 import dask
-import uproot4
 import numpy as np
 import pandas as pd
 import hist
@@ -10,8 +9,7 @@ from dask.array import histogram as ds_hist
 import dask.dataframe as dd
 import timeit
 from hist import Hist
-
-
+import time
 
 class HistoMaker:
 
@@ -23,6 +21,7 @@ class HistoMaker:
         self.dask_dfs = kwargs.get('dask_data_frames',[]) ## no data frames present by default
         self.hist_names = kwargs.get('histogram_names',[])
         self.hist_params = kwargs.get('histogram_params',{})
+        self.client = None
     
     def get_att(self):
         return vars(self)
@@ -37,20 +36,28 @@ class HistoMaker:
                 client_params[key] = kwargs[key]
 
         cl = dask.distributed.Client(**self.client_params)
+        self.client = cl
         return cl
 
-    @dask.delayed
+    
     def load_data(self,**kwargs):
         ## change that to something better in the future
         if kwargs.get('folder_name',None) != None: self.folder_name = kwargs.get('folder_name',None)
         if kwargs.get('file_list',None) != None: self.file_list = kwargs.get('file_list',None)
-        if kwargs.get('drop_existing',False) == True: self.dask_dfs = [] ##in the future expand on these options
+        #if kwargs.get('drop_existing',False) == True: self.dask_dfs = [] ##in the future expand on these options
 
         for f in self.file_list:
+            t1 = time.time()
             temp = pd.read_hdf( self.folder_name + '/' + f)
+            t2 = time.time()
+            print("read time:", t2-t1)
             temp.reset_index(inplace = True)
+            t3 = time.time()
+            print("reset time:", t3-t2)
             temp = dd.from_pandas(temp,npartitions=1) ##change to variable with list option or just one value
             self.dask_dfs.append(temp)
+            t4 = time.time()
+            print("converting:", t4-t3)
 
         return self.dask_dfs
 
@@ -63,8 +70,8 @@ class HistoMaker:
             self.histograms[name] = Hist(hist.axis.Regular(**self.hist_params)) #bins=10, start=0, stop=1, name="x"
 
         return self.histograms
-
-    @dask.delayed
+    
+    
     def fill_histograms(self,col_name,**kwargs): ##change that later
         counter = 0
         for key in self.histograms:
@@ -72,7 +79,6 @@ class HistoMaker:
             counter += 1
 
         return self.histograms
-
 
 
 
