@@ -4,33 +4,27 @@ import dask
 import numpy as np
 import pandas as pd
 import hist
-import uproot4 as uproot
-from dask.array import histogram as ds_hist
-import dask.dataframe as dd
 import timeit
 from hist import Hist
 import time
 import gc
-import psutil
 from dask.distributed import get_client
 import re
 import subprocess
+import hist_vars
 
 class HistoMaker:
 
     def __init__(self,**kwargs):
-        self.histograms = {}
+        
         self.file_list = kwargs.get('file_list',None)
         self.client_params = kwargs.get('client_params',{}) ## no params by default
-        self.hist_names = kwargs.get('histogram_names',[])
-        self.hist_params = kwargs.get('histogram_params',{})
         self.worker_number = 1 # default
+        self.histograms_computed = []
+        self.histogram_variables = kwargs.get('histogram_variables',hist_vars.var_main)
         
     def get_att(self):
         return vars(self)
-
-    def clear_data(self):
-        self.histograms = {}
 
     def create_file_list(self,top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)',dir_regex = '(?=^[^.].)',**kwargs): #defaults to h5
         regex = re.compile(file_regex)
@@ -47,7 +41,6 @@ class HistoMaker:
 
         return file_names
 
-
     def client_start(self,**kwargs):
         for key in kwargs:
             if self.client_params.get(key) != kwargs[key]:
@@ -56,7 +49,7 @@ class HistoMaker:
         cl = dask.distributed.Client(**self.client_params)
         self.worker_number = len(cl.scheduler_info()['workers'])
         return cl
-    
+   
     @dask.delayed
     def load_h5(self,file_path):
         temp = pd.read_hdf(file_path)
@@ -64,45 +57,65 @@ class HistoMaker:
     
     @dask.delayed
     def load_pkl(self,file_path):
-        temp = pd.read_pickle(file_path.replace('.h5','.pkl'))
+        temp = pd.read_pickle(file_path)
         return temp
     
     @dask.delayed
-    def fill(self,histogram,data):
-        histogram.fill(data)
-        return histogram
-    
-    def load_and_fill(self,**kwargs):
-        ## change that to something better in the future
-        if kwargs.get('file_list',None) != None: self.file_list = kwargs.get('file_list',None)
+    def fill(self,data,hist_dict):
+        column_list = list(data.columns)
+        histograms_to_fill = []
+        data_columns = []
+        histograms_filled = []
+
+        for col in column_list:
+            if isinstance(hist_dict.get(col),(hist.axis.Regular,hist.axis.Variable)):
+                temp = Hist(hist_dict[col])
+                histograms_to_fill.append(temp)
+                data_columns.append(col)
         
-        counter = 1
+        for (histogram,data_column) in zip(histograms_to_fill,data_columns):
+            histograms_filled.append(histogram.fill(data[data_column]))
+
+        return histograms_filled
+    
+    def load_and_fill(self,file_list = [],**kwargs):
+        ## change that to something better in the future
+        
         results = []
-        key_list = list(self.histograms.keys())
-          
-        for f in self.file_list:
+        for f in file_list:
                 
-            #load_result = self.load_h5(self.folder_name + '/' + f)
-            #result = self.write_pkl(self.folder_name + '/' + f,load_result)
-            load_again = self.load_pkl(f)
-            result = self.fill(self.histograms[key_list[0]],load_again[kwargs['data_col']])
-            #results.append(load_result)
+            data = self.load_pkl(f)
+            result = self.fill(data,self.histogram_variables)
             results.append(result)
-            counter += 1
                 
         return results
     
-    
-    def create_histograms(self,**kwargs):
-        if kwargs.get('histogram_names',None) != None: self.hist_names = kwargs.get('histogram_names',None)
-        if kwargs.get('histogram_params',None) != None: self.hist_params = kwargs.get('histogram_params',None)
-        if kwargs.get('drop_existing',False) == True: self.histograms = {}
+    def compute_histograms(self,data_column = '',chunk_size = 8,file_list = [],**kwargs):
+        output = []
+        
+        for i in range(int(len(file_list)/chunk_size)+1):
+            if i == int(len(file_list)/chunk_size):
+                file_chunk = file_list[(i+1)*chunk_size-1:]
+            else:
+                file_chunk = file_list[i*chunk_size:(i+1)*chunk_size-1]
 
-        for name in self.hist_names:
-            self.histograms[name] = Hist(hist.axis.Regular(**self.hist_params)) #bins=10, start=0, stop=1, name="x"
+            histogram_chunk = dask.compute(self.load_and_fill(file_list = file_chunk))
+            
+            for item in histogram_chunk[0]:
+                #we can create histogram wrapper objects here and add newly computed histograms here
+                output.append(item)   
 
-        return self.histograms
-    
+        return output
+
+
+
+class Histogram_wrapper(hist.Hist):
+    # looks like I will need to update python version, name and label are not supported in hist 2.4 
+    def __init__(self, *args, storage = None, metadata = None, data = None):
+        
+        super().__init__(*args, storage = None, metadata = None, data = None)
+        #print(self.label)
+
 
 class Computation:
 
@@ -110,7 +123,13 @@ class Computation:
         self.delayed_array = kwargs.get('delayed_array', [])
         self.histograms = kwargs.get('histograms',{})
 
+
+
+
+
+def combine_dicts(dict_list):
     
+    pass
 
 
 
