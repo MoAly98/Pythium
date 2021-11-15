@@ -14,7 +14,7 @@ if __name__ == '__main__':
     samples = dfdict['df_Samples']
     yield_df = pd.DataFrame(samples['Yield'].to_list(), columns=[f"Yield_{i}" for i in range(len(samples.loc[0][1]))])
     samples = pd.concat([samples, yield_df], axis=1).drop('Yield', axis=1)
-    # print(samples)
+    print(samples)
 
     total = dfdict['df_Total']
     # print(total)
