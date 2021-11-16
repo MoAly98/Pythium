@@ -4,11 +4,6 @@ import dask
 import numpy as np
 import pandas as pd
 import hist
-import timeit
-from hist import Hist
-import time
-import gc
-from dask.distributed import get_client
 import re
 import subprocess
 import hist_vars
@@ -21,7 +16,7 @@ class HistoMaker:
         self.client_params = kwargs.get('client_params',{}) ## no params by default
         self.worker_number = 1 # default
         self.histograms_computed = []
-        self.histogram_variables = kwargs.get('histogram_variables',hist_vars.var_main)
+        self.histogram_variables = kwargs.get('histogram_variables',{})
         
     def get_att(self):
         return vars(self)
@@ -92,6 +87,7 @@ class HistoMaker:
     
     def compute_histograms(self,data_column = '',chunk_size = 8,file_list = [],**kwargs):
         output = []
+        if kwargs.get('histogram_variables') != None: self.histogram_variables = kwargs.get('histogram_variables')
         
         for i in range(int(len(file_list)/chunk_size)+1):
             if i == int(len(file_list)/chunk_size):
@@ -101,7 +97,7 @@ class HistoMaker:
 
             histogram_chunk = dask.compute(self.load_and_fill(file_list = file_chunk))
             
-            for item in histogram_chunk[0]:
+            for item in histogram_chunk[0]: #each item contains list of hist objects
                 #we can create histogram wrapper objects here and add newly computed histograms here
                 output.append(item)   
 
@@ -109,12 +105,12 @@ class HistoMaker:
 
 
 
-class Histogram_wrapper(hist.Hist):
+class Histogram_wrapper(hist.basehist.BaseHist, family=hist):
     # looks like I will need to update python version, name and label are not supported in hist 2.4 
-    def __init__(self, *args, storage = None, metadata = None, data = None):
+    def __init__(self, *args, storage = None, metadata = None, data = None,name = None, label = None):
         
         super().__init__(*args, storage = None, metadata = None, data = None)
-        #print(self.label)
+        
 
 
 class Computation:
@@ -125,11 +121,13 @@ class Computation:
 
 
 
-
-
 def combine_dicts(dict_list):
-    
-    pass
+    out = {}
+    for dictionary in dict_list:
+        for key in dictionary:
+            out[key] = dictionary[key]
+
+    return out
 
 
 

@@ -1,8 +1,8 @@
 from hist.axis import Variable, Regular
 
 var_main = {
-    'rljet_pt_comb':      Variable([ 4.5e5, 5e5, 5.5e5, 6e5, 6.5e5, 7e5, 7.5e5, 8e5, 8.5e5, 9e5, 9.5e5, 1e6, 1.1e6, 1.2e6, 1.3e6, 1.4e6, 1.5e6, 1.7e6, 2.5e6], name='x', label=r'$p_{T}$[MeV]'  ),
-    #'rljet_pt_comb':            Regular(20, 300e3, 600e3, name='x', label=r'$p_{T}$[MeV]'  ),
+    #'rljet_pt_comb':      Variable([ 4.5e5, 5e5, 5.5e5, 6e5, 6.5e5, 7e5, 7.5e5, 8e5, 8.5e5, 9e5, 9.5e5, 1e6, 1.1e6, 1.2e6, 1.3e6, 1.4e6, 1.5e6, 1.7e6, 2.5e6], name='x', label=r'$p_{T}$[MeV]'  ),
+    'rljet_pt_comb':            Regular(20, 300e3, 600e3, name='x', label=r'$p_{T}$[MeV]'  ),
     'rljet_m_comb[:,0]'       : Regular(20, 50e3, 500e3,  name='x', label='m [MeV]'),
     'rljet_Angularity'        : Regular(20, 0., 0.1,  name='x', label='Angularity'),
     'rljet_Aplanarity'        : Regular(20, 0., 1,    name='x', label='Aplanarity'),
