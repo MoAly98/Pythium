@@ -4,13 +4,13 @@ import pandas as pd
 if __name__ == '__main__':
 
     # this function takes a 1x3 df where each cell is a list of values
-    # that would be much more easily visible in a column format
+    # that would be much more easily readable in a column format
     def df_fixer(df):
 
         col_dfs = []
-        for i in range(len(df.loc[0,:])):
+        for i, element in enumerate(df.loc[0,:]):
             col_name = df.columns[i]
-            newdf = pd.DataFrame(df.iloc[0][i], columns=[col_name])
+            newdf = pd.DataFrame(element, columns=[col_name])
             col_dfs.append(newdf)
         
         return pd.concat(col_dfs, axis=1)
@@ -21,10 +21,9 @@ if __name__ == '__main__':
     dictionary = yaml.full_load(stream)
 
     # transform each element (sample, total, data, figure) of dictionary
-    # into readable dataframes (where convenient)
+    # into readable dataframes (if necessary)
     samples = pd.DataFrame(dictionary['Samples'])
-    # expand each row (which is a list) into separate columns
-    # for each element
+    # expand each row (which is a list) into separate columns for each element
     yield_df = pd.DataFrame(samples['Yield'].to_list(), columns=[f"Yield_{i}" for i in range(len(samples.loc[0][1]))])
     samples = pd.concat([samples, yield_df], axis=1).drop('Yield', axis=1)
 
@@ -38,7 +37,7 @@ if __name__ == '__main__':
     dictionary['Total'] = total_fixed
     dictionary['Data'] = data_fixed
 
-    print(dictionary)
+    # print(dictionary)
 
 
     
