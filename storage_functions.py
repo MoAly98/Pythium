@@ -1,6 +1,7 @@
 import os
 import sys
 import dask
+from distributed import Client
 import numpy as np
 import pandas as pd
 import hist
@@ -9,19 +10,105 @@ import subprocess
 import hist_vars
 
 class HistoMaker:
+    """
+    A class used as an interface to create histograms from pkl or hdf files
+    ...
+
+    Attributes
+    ----------
+    file_list : List[str]
+        a list of full paths to files.
+
+    client_params : dict
+        parameters passed to the Dask client.
+
+    worker_number : int
+        number of worker nodes running.
+
+    histograms_computed : List[List[Hist]]
+        list of lists of hist objects such that histograms_computed[n].
+        returns nth file that contains a number of hist objects such that, 
+        histograms_computed[n][i] returns ith histogram.
+
+    histogram_variables : dict
+        dictionary that contains hist vars. Each key corresponds to column name 
+        and each value contains hist object params for example
+        'rljet_m_comb[:,0]' : Regular(20, 50e3, 500e3,  name='x', label='m [MeV]').
+
+    Methods
+    -------
+    __init__(self,**kwargs)
+        initialise the class and saves any passed arguments.
+
+    create_file_list(top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)',dir_regex = '(?=^[^.].)',**kwargs))
+        creates a list of files in directories under root directory that match regex strings.
+
+    client_start(self,**kwargs)
+        starts a Dask client with client parameters passed to this function or during init.
+
+    load_h5(self,file_path)
+        load and return hdf file as Dask.delayed object.
+
+    load_pkl(self,file_path)
+        load and return pickle file as Dask.delayed object.
+
+    fill(self,data,hist_dict)
+        fills a histogram for each column present in the histogram_variables dictionary 
+        returns a list of Dask.delayed objects when computed these objects are hists.
+
+    load_and_fill(self,file_list = [],**kwargs)
+        combines load and fill to load and fill histograms for each file in the list
+        returns a list of Dask.delayed objets.
+
+    compute_histograms(self,chunk_size = 8,file_list = [],**kwargs)
+        computes load_and_fill in chunks specified by chunk size
+        divides file list into chunks and feeds them to load_and_fill. 
+        it then executes Dask.compute on the batch and appends the results
+        to histograms_computed. Once finished with all batches, it returns histograms_computed.
+    """
 
     def __init__(self,**kwargs):
+        """
+        initializes the class and saves any input arguments
+
+        Arguments
+        -------
+        **kwargs :
+            keyword arguments
+
+        Return
+        -------
+        None
+        """
         
         self.file_list = kwargs.get('file_list',None)
-        self.client_params = kwargs.get('client_params',{}) ## no params by default
+        self.client_params = kwargs.get('client_params',{})
         self.worker_number = 1 # default
-        self.histograms_computed = []
+        self.histograms_computed = [] 
         self.histogram_variables = kwargs.get('histogram_variables',{})
-        
-    def get_att(self):
-        return vars(self)
 
-    def create_file_list(self,top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)',dir_regex = '(?=^[^.].)',**kwargs): #defaults to h5
+    def create_file_list(self,top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)',dir_regex = '(?=^[^.].)',**kwargs) -> List[str]: 
+        """
+        creates a list of files in directories under root directory that match regex strings.
+
+        Arguments
+        -------
+        top_directory : 
+            directory from which user wants to start searching for files that match the pattern.
+        
+        file_regex :
+            regex string used to match file names and their relative directory
+
+        dir_regex : 
+            regex string used to match directories with.
+
+        **kwargs :
+            keyword arguments
+
+        Return
+        -------
+        List of full file paths
+        """
         regex = re.compile(file_regex)
         dir_regex = re.compile(dir_regex)
         file_names = []
@@ -37,11 +124,23 @@ class HistoMaker:
         return file_names
 
     def client_start(self,**kwargs):
+        """
+        starts a Dask Client
+
+        Arguments
+        -------
+        **kwargs :
+            keyword arguments
+
+        Return
+        -------
+        Client handler/object
+        """
         for key in kwargs:
             if self.client_params.get(key) != kwargs[key]:
                 self.client_params[key] = kwargs[key]
 
-        cl = dask.distributed.Client(**self.client_params)
+        cl = Client(**self.client_params)
         self.worker_number = len(cl.scheduler_info()['workers'])
         return cl
    
@@ -57,14 +156,20 @@ class HistoMaker:
     
     @dask.delayed
     def fill(self,data,hist_dict):
+        
         column_list = list(data.columns)
+        column_dict = {}
+
+        for col in column_list:
+            column_dict[col] = 'present'
+        
         histograms_to_fill = []
         data_columns = []
         histograms_filled = []
 
-        for col in column_list:
-            if isinstance(hist_dict.get(col),(hist.axis.Regular,hist.axis.Variable)):
-                temp = Hist(hist_dict[col])
+        for col in hist_dict:
+            if col in column_dict:
+                temp = hist.Hist(hist_dict[col])
                 histograms_to_fill.append(temp)
                 data_columns.append(col)
         
@@ -74,19 +179,25 @@ class HistoMaker:
         return histograms_filled
     
     def load_and_fill(self,file_list = [],**kwargs):
-        ## change that to something better in the future
         
         results = []
         for f in file_list:
-                
-            data = self.load_pkl(f)
+            
+            filename, file_extension = os.path.splitext(f)
+            if file_extension == '.h5':
+                data = self.load_h5(f)
+            else:
+                data = self.load_pkl(f)
+            
             result = self.fill(data,self.histogram_variables)
             results.append(result)
                 
         return results
     
-    def compute_histograms(self,data_column = '',chunk_size = 8,file_list = [],**kwargs):
+    def compute_histograms(self,chunk_size = 8,file_list = [],**kwargs):
         output = []
+
+        if file_list == []: file_list = self.file_list
         if kwargs.get('histogram_variables') != None: self.histogram_variables = kwargs.get('histogram_variables')
         
         for i in range(int(len(file_list)/chunk_size)+1):
@@ -101,23 +212,9 @@ class HistoMaker:
                 #we can create histogram wrapper objects here and add newly computed histograms here
                 output.append(item)   
 
+        self.histograms_computed = output
+
         return output
-
-
-
-class Histogram_wrapper(hist.basehist.BaseHist, family=hist):
-    # looks like I will need to update python version, name and label are not supported in hist 2.4 
-    def __init__(self, *args, storage = None, metadata = None, data = None,name = None, label = None):
-        
-        super().__init__(*args, storage = None, metadata = None, data = None)
-        
-
-
-class Computation:
-
-    def __init__(self,**kwargs):
-        self.delayed_array = kwargs.get('delayed_array', [])
-        self.histograms = kwargs.get('histograms',{})
 
 
 
