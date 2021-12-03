@@ -11,7 +11,7 @@ def my_timer(function):
         start = time.perf_counter()
         result = function(*args)
         end = time.perf_counter()
-        print(f"{function.__name__} ran in {end - start} seconds.")
+        print(f"{function.__name__} ran in {1000*(end - start):.0f} ms.")
         return result
     
     return wrapper
