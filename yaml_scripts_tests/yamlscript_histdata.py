@@ -17,6 +17,7 @@ def my_timer(function):
     return wrapper
 
 
+
 @my_timer
 def histdata_parser(file_name):
 
