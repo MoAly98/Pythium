@@ -112,7 +112,7 @@ class HistoMaker:
         regex = re.compile(file_regex)
         dir_regex = re.compile(dir_regex)
         file_names = []
-
+        #consider list comperhension for file loop
         for root, dirs, files in os.walk(top_directory,topdown = True):
             dirs[:] = [d for d in dirs if dir_regex.match(d)]
             for file in files:
@@ -122,7 +122,7 @@ class HistoMaker:
         self.file_list = file_names
 
         return file_names
-
+    # error validation
     def client_start(self,**kwargs):
         """
         starts a Dask Client
@@ -212,6 +212,9 @@ class HistoMaker:
                 temp = hist.Hist(hist_dict[col])
                 histograms_to_fill.append(temp)
                 data_columns.append(col)
+            else:
+                pass
+                #flag a warning
         
         for (histogram,data_column) in zip(histograms_to_fill,data_columns):
             histograms_filled.append(histogram.fill(data[data_column]))
@@ -238,6 +241,7 @@ class HistoMaker:
         for f in file_list:
             
             filename, file_extension = os.path.splitext(f)
+            # chnage this to something better
             if file_extension == '.h5':
                 data = self.load_h5(f)
             else:
@@ -290,6 +294,16 @@ class HistoMaker:
 
         return output
 
+    def combine_histograms(self):
+
+        combined_hists = self.histograms_computed[0]
+
+        for i in range(1,len(self.histograms_computed)):
+            for j in range(0,len(self.histograms_computed[i])):
+
+                combined_hists[j] = combined_hists[j] + self.histograms_computed[i][j]
+
+        return combined_hists
 
 
 def combine_dicts(dict_list):
