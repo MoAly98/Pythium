@@ -86,6 +86,8 @@ class HistoMaker:
         self.worker_number = 1 # default
         self.histograms_computed = [] 
         self.histogram_variables = kwargs.get('histogram_variables',{})
+        self.histograms_combined = {}
+        
 
     def create_file_list(self,top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)',dir_regex = '(?=^[^.].)',**kwargs): 
         """
@@ -212,6 +214,7 @@ class HistoMaker:
                 temp = hist.Hist(hist_dict[col])
                 histograms_to_fill.append(temp)
                 data_columns.append(col)
+                
             else:
                 pass
                 #flag a warning
@@ -273,6 +276,7 @@ class HistoMaker:
         returns nth file that contains a number of hist objects such that, 
         histograms_computed[n][i] returns ith histogram.
         """
+        self.histograms_computed = []
         output = []
 
         if file_list == []: file_list = self.file_list
@@ -297,13 +301,24 @@ class HistoMaker:
     def combine_histograms(self):
 
         combined_hists = self.histograms_computed[0]
+        temp = {}
 
         for i in range(1,len(self.histograms_computed)):
             for j in range(0,len(self.histograms_computed[i])):
 
                 combined_hists[j] = combined_hists[j] + self.histograms_computed[i][j]
 
-        return combined_hists
+        i = 0
+        # change that later to something less error prone
+        for key in self.histogram_variables:
+
+            temp[key] = combined_hists[i]
+            
+            i = i + 1
+
+        self.histograms_combined = temp
+
+        return combined_hists, temp
 
 
 def combine_dicts(dict_list):
