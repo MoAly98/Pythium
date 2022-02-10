@@ -17,7 +17,7 @@ def corrmatrix_parser(file_name):
         matrix_df.set_index(serie, inplace=True) # change row names
         matrix_df.rename(columns=serie, inplace=True) # change column names
 
-        print(matrix_df)
+        return matrix_df
 
 
 if __name__ == "__main__":

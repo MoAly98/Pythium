@@ -36,7 +36,10 @@ class EmptyPlot():
         ax.minorticks_on()
         ax.tick_params(**ticks_kw)
     
-    def set_color(self, colormap="viridis", reverse=False): # create custom color map
+    def set_color(self, colormap='viridis'):
+        mpl.rcParams['image.cmap'] = colormap
+    
+    def set_stack_color(self, colormap="viridis", reverse=False): # create custom color map
         
         clist = []
         source = self.dflist # list of units to be stacked
