@@ -7,7 +7,7 @@ import pandas as pd
 import hist
 import re
 import subprocess
-import hist_vars
+
 
 class HistoMaker:
     """
@@ -88,6 +88,7 @@ class HistoMaker:
         self.histogram_variables = kwargs.get('histogram_variables',{})
         self.histograms_combined = {}
         
+        
 
     def create_file_list(self,top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)',dir_regex = '(?=^[^.].)',**kwargs): 
         """
@@ -144,6 +145,7 @@ class HistoMaker:
 
         cl = Client(**self.client_params)
         self.worker_number = len(cl.scheduler_info()['workers'])
+        
         return cl
    
     @dask.delayed
@@ -319,6 +321,10 @@ class HistoMaker:
         self.histograms_combined = temp
 
         return combined_hists, temp
+    
+    
+
+
 
 
 def combine_dicts(dict_list):

@@ -7,7 +7,6 @@ import pandas as pd
 import hist
 import re
 import subprocess
-import hist_vars
 
 
 class Histogram_wrapper(hist.basehist.BaseHist, family=hist):

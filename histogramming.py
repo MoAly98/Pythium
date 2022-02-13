@@ -1,6 +1,6 @@
 import pickle
 import histogramming_config as hf
-import storage_functions as sf
+import Histogramming.storage_functions as sf
 
 def run():
 
