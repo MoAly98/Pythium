@@ -70,6 +70,8 @@ class EmptyPlot():
                 mpl.rcParams[key] = value
         else:
             print("Please put a dictionary as argument for 'config_rcParams' function") # need logger here
+        
+        # can also add a 'help' command to display all the rcParams variables that can be cahnged to help user
     
     def saveimage(self, name):
         self.fig.savefig(name, facecolor='white', transparent=False, dpi=1200, bbox_inches='tight')

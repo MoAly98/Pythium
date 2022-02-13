@@ -14,7 +14,7 @@ def txt_parser(file_name):
         # set first column ("parameters") as index of df
         df.set_index(0, inplace=True)
 
-        print(df)
+    return df
 
 
 if __name__ == "__main__":
