@@ -1,5 +1,4 @@
 import os
-import sys
 import dask
 from distributed import Client
 import numpy as np
@@ -7,6 +6,10 @@ import pandas as pd
 import hist
 import re
 import subprocess
+
+import sys
+sys.path.append(os. getcwd()+'/Histogramming')
+
 import hist_vars as hist_vars
 import histogramming_config as hc
 import storage_functions as sf
