@@ -84,5 +84,5 @@ class EmptyPlot():
         # there is an easier function already in matplotlib, might want to switch to that
     
     
-    def saveimage(self, name, dpi=1200):
+    def saveimage(self, name, dpi):
         self.fig.savefig(name, facecolor='white', transparent=False, dpi=dpi, bbox_inches='tight')
