@@ -5,6 +5,10 @@ import numpy as np
 import mplhep as hep
 
 
+"""
+This is where all plot classes will be stored
+"""
+
 
 class EmptyPlot():
     
@@ -51,7 +55,7 @@ class EmptyPlot():
     
     
     def set_stack_color(self, colormap="viridis", reverse=False):
-        # create custom color map for stacked histogram
+        # create custom color map for stack histogram
         
         clist = []
         source = self.dflist # list of units to be stacked
