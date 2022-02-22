@@ -86,6 +86,7 @@ class EmptyPlot():
         
         # can also add a 'help' command to display all the rcParams variables that can be cahnged to help user
         # there is an easier function already in matplotlib, might want to switch to that
+        # https://matplotlib.org/stable/api/matplotlib_configuration_api.html#matplotlib.rc
     
     
     def saveimage(self, name, dpi):
