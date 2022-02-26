@@ -25,14 +25,18 @@ class EmptyPlot():
         self.colorlist   = []
         
         # set default dict of axes titles
-        self.xtitles_dict = {"xmain": '',
-                             "xtop" : '',
-                             "xbot" : '',
-        }
-        self.ytitles_dict = {"ymain": '',
-                             "ytop" : '',
-                             "ybot" : '',
-        }
+        self.xtitles_dict = {"xmain" : '',
+                             "xtop"  : '',
+                             "xbot"  : '',
+                             "xleft" : '',
+                             "xright": ''
+                            }
+        self.ytitles_dict = {"ymain" : '',
+                             "ytop"  : '',
+                             "ybot"  : '',
+                             "yleft" : '',
+                             "yright": ''
+                            }
     
     
     def create_canvas(self):
@@ -60,16 +64,32 @@ class EmptyPlot():
         
         ax.minorticks_on()
         ax.tick_params(**ticks_kw)
-        
-    
-    def set_xtitles(self, ax, axis_key):
-        
-        ax.set_xlabel(self.xtitles_dict[axis_key])
     
     
-    def set_ytitles(self, ax, axis_key):
+    def fill_titlesdict(self, **titles_kw):
         
-        ax.set_ylabel(self.ytitles_dict[axis_key])
+        if isinstance(titles_kw, dict):
+            
+            for key in titles_kw.keys():
+                if   key in self.xtitles_dict.keys():
+                    self.xtitles_dict.update(titles_kw)
+                elif key in self.ytitles_dict.keys():
+                    self.ytitles_dict.update(titles_kw)
+                else:
+                    print("Key not valid") #logger
+        
+        else:
+            print(f"{titles_kw} is not a dictionary")
+        
+    
+    def set_xtitles(self, ax, axis_key, fontsize, labelpad):
+        
+        ax.set_xlabel(self.xtitles_dict[axis_key], fontsize=fontsize, labelpad=labelpad)
+    
+    
+    def set_ytitles(self, ax, axis_key, fontsize, labelpad):
+        
+        ax.set_ylabel(self.ytitles_dict[axis_key], fontsize=fontsize, labelpad=labelpad)
         
     
     def set_color(self, colormap='viridis', reverse=False):
@@ -108,9 +128,9 @@ class EmptyPlot():
         if isinstance(settings_dict, dict):
             for key, value in settings_dict.items():
                 mpl.rcParams[key] = value
-                print(key, value)
+                print(key, value) # make sure it's working
         else:
-            print("Please put a dictionary as argument for 'config_rcParams' function") # need logger
+            print(f"Put a dictionary as argument for {__name__} function") # need logger
         
         # can also add a 'help' command to display all the rcParams variables that can be cahnged to help user
         
