@@ -68,6 +68,9 @@ class EmptyPlot():
         
         self.fig = plt.figure(figsize=self.figsize)
         hep.style.use(self.style) # available syles are: {"ALICE" | "ATLAS" | "CMS" | "LHCb1" | "LHCb2"}
+        
+        # set math text font to non-italics
+        mpl.rcParams['mathtext.default'] = 'regular'
 
         
     def make_grid(self, **grid_kw):
@@ -86,11 +89,11 @@ class EmptyPlot():
         
         if isinstance(titles_kw, dict):
             
-            for key in titles_kw.keys():
+            for key, value in titles_kw.items():
                 if   key in self.xtitles_dict.keys():
-                    self.xtitles_dict.update(titles_kw)
+                    self.xtitles_dict[key] = value
                 elif key in self.ytitles_dict.keys():
-                    self.ytitles_dict.update(titles_kw)
+                    self.ytitles_dict[key] = value
                 else:
                     print("Key not valid") #logger
         
@@ -102,14 +105,12 @@ class EmptyPlot():
         # set x axis labels according to xtitles_dict
         
         ax.set_xlabel(self.xtitles_dict[axis_key], fontsize=fontsize, labelpad=labelpad)
-        print("okx")
     
     
     def set_ytitles(self, ax, axis_key, fontsize, labelpad):
         # set y axis labels according to ytitles_dict
         
         ax.set_ylabel(self.ytitles_dict[axis_key], fontsize=fontsize, labelpad=labelpad)
-        print("oky")
         
     
     def set_color(self, colormap='viridis', reverse=False):
