@@ -27,14 +27,20 @@ out_dir = '/tmp/kmalirz'
 
 Samples = [
     XP_Sample(regex = True, top_directory = file_list['top_directory'], 
-    file_regex = '(?=^[^.].)(.*gammajet_210921.*)(.*h5$)', name = 'test1'),
+    file_regex = '(?=^[^.].)(.*gammajet_210921.*)(.*15.*)(.*h5$)', name = 'test1'),
     XP_Sample(regex = True, top_directory = file_list['top_directory'], 
-    file_regex = '(?=^[^.].)(.*15.*)(.*h5$)', name = 'test2')
+    file_regex = '(?=^[^.].)(.*gammajet_210921.*)(.*16.*)(.*h5$)', name = 'test2')
 ]
 
-Regions = [
+Regions = [ #write switch function
     XP_Region(name = 'high_pt', filter = 'rljet_pt_comb > 4*10**5'),
-    XP_Region(name = 'low_pt', filter = 'rljet_pt_comb <= 4*10**5')
+    XP_Region(name = 'low_pt', filter = 'rljet_pt_comb <= 4*10**5'),
+    XP_Region(name = 'default', filter = 'rljet_pt_comb >= 0'),
+    XP_Region(name = 'test1', filter = 'rljet_pt_comb >= 0'),
+    XP_Region(name = 'test2', filter = 'rljet_pt_comb >= 10**5'),
+    XP_Region(name = 'test3', filter = 'rljet_pt_comb >= 2*10**5'),
+    XP_Region(name = 'test4', filter = 'rljet_pt_comb >= 20'),
+    XP_Region(name = 'test5', filter = 'rljet_pt_comb >= 0')
 ]
 
 Systematics = [ #do weights systematic
@@ -43,4 +49,12 @@ Systematics = [ #do weights systematic
 
 def functional_XP(sample,region,systematic):
 
-    return (region_query,sample_filter,systematic_weight)
+    if region == 'default':
+
+        skip = True
+    
+    else:
+
+        skip = False
+
+    return (None,None,None,skip) #return region_filter, sample_filter, systematic_weight, skip bool

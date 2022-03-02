@@ -38,6 +38,18 @@ class XP_Systematics:
         self.weighting = kwargs.get('weigth',1)
 
 
+class Named_hists:
+
+    def __init__(self,**kwargs):
+
+        self.name = kwargs.get('name')
+        self.sample = kwargs.get('sample')
+        self.region = kwargs.get('region')
+        self.systematic = kwargs.get('systematic')
+        self.file = kwargs.get('file')
+
+        
+
 def create_file_list(top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)',dir_regex = '(?=^[^.].)'): 
 
         regex = re.compile(file_regex)
@@ -51,3 +63,4 @@ def create_file_list(top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$
                     file_names.append(root+file)
 
         return file_names
+
