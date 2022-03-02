@@ -1,5 +1,5 @@
 Logging module
 ===============
 
-.. automodule:: common.logger
+.. automodule:: utils.common.logger
    :members:

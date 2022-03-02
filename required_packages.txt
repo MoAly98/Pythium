@@ -1,6 +1,10 @@
 numpy
+mplhep
 matplotlib
 uproot4
 awkward1
-pandas
-tables
+h5py
+pathlib
+pydoc
+psutil
+time

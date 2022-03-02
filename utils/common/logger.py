@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
+'''
+Logging module thanks to Brian Le from Pythium
+'''
 import logging
 import re
 import sys
-
+sys.tracebacklimit = None
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 
 COLORS = {
     'WARNING': YELLOW,
-    'INFO': WHITE,
-    'DEBUG': GREEN,
+    'INFO': GREEN,
+    'DEBUG': BLUE,
     'CRITICAL': MAGENTA,
     'ERROR': RED
 }
@@ -39,12 +42,12 @@ class ColoredFormatter(logging.Formatter):
             message = record.msg
             record.msg = ''
             if record.levelno == 10:
-                record.msg += COLOR_SEQ % (30 + COLORS[levelname])
+                record.msg = COLOR_SEQ % (30 + COLORS[levelname]) + record.msg
             if record.levelno > 20:
                 if record.levelno > 30:
-                    record.msg += BLINK_SEQ + COLOR_SEQ % (30 + COLORS[levelname])
+                    record.msg += COLOR_SEQ % (30 + COLORS[levelname])
                 record.msg += COLOR_SEQ % (30 + COLORS[levelname])
-            record.msg += message
+            record.msg += COLOR_SEQ % (30 + COLORS[levelname]) + message
             if not record.levelno == 20:
                 filemsg = '$RESET\t$RESET($BOLD{fl}:{fn}$RESET:{ln})'
                 filemsg = filemsg.format(fl=record.filename, fn=record.funcName, ln=record.lineno)
@@ -65,7 +68,7 @@ class ColoredLogger(logging.Logger):
         else:
             self.FORMAT = "[$BOLD%(module)-s:%(levelname)-s$RESET]  %(message)s"
         self.COLOR_FORMAT = formatter_message(self.FORMAT, True)
-        logging.Logger.__init__(self, name, logging.DEBUG)                
+        logging.Logger.__init__(self, name, logging.INFO)                
 
         color_formatter = ColoredFormatter(self.COLOR_FORMAT)
 

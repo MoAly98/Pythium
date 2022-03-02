@@ -12,7 +12,6 @@ Contents
 
 .. toctree::
  usage
- CommonTools
- CommonClasses
- SklimmingClasses
+ Common
+ Sklimming
  Logging
