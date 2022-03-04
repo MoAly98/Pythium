@@ -3,10 +3,12 @@ from utils.common.samples import *
 from utils.common.branches import *
 from utils.common.selection import *
 from utils.common.user_tools import *
-from skhep.math.vectors import Vector3D,LorentzVector
 import numpy as np
 import misc.lorentz_functions as VF
+import vector
+import awkward as ak
 
+vector.register_awkward()
 
 tname = 'nominal_Loose'
 general_settings = {}
@@ -29,7 +31,7 @@ for ptag in parton_tags:
             #Branch(ptag+'_Py',ptag+'_Pz'),
             #Branch(ptag+'_Pz',ptag+'_Py'),
             #Branch(ptag+'_E', ptag+'_E'),
-            Branch(ptag+'_p4', VF.P4, args = [ptag+'_Px',ptag+'_Py',ptag+'_Pz',ptag+'_E'],
+            Branch(ptag+'_p4', VF.Vector4D, args = [ptag+'_Px',ptag+'_Py',ptag+'_Pz',ptag+'_E'],
                         args_types=[Branch,Branch,Branch,Branch],drop=True),
             Branch(ptag+'_eta',VF.Eta, args = [ptag+'_p4'],
                         args_types=[Branch]),
@@ -53,7 +55,6 @@ branchList.extend([
 ])
 branches[tname] = branchList
 
-px.to_numpy()
 #Dictionary for sample names : directories?
 
 samples = [Sample(name = "ttb", tag = ['410470_user'], 
