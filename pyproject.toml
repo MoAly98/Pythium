@@ -1,0 +1,8 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "pythium"
+authors = [{name = "Mohamed Aly", email = "mohamed.aly@cern.ch"},{name = "Brian Le", email = "brian.le@cern.ch"}]
+dynamic = ["version", "description"]
