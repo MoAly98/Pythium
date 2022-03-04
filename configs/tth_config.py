@@ -21,12 +21,13 @@ def TTHVars(p1,p2,beta=None):
 
     b1 = Cos(q1.cross(qp1),q2.cross(qp1))
     b2 = (q1.Cross(qp1)).dot(q2.cross(qp1))
-    b3x = q1.x()*q2.x()/(abs(q1.cross(qp1)*abs(q2.cross(qp2))))
+    b3x = q1.x*q2.x/(abs(q1.cross(qp1)*abs(q2.cross(qp2))))
     b4 = (q1.dot(qp1))*(q2.dot(qp2))
     b5 = TripleProd(qp1,q1,q2)
     b6 = TripleProd(qp1,q1,q2)/(abs(q1.cross(qp1))*abs(q2.cross(qp2)))
     b7 = TripleProd(qp1,q1,q2)/abs(q1.cross(q2))
     b8 = (qp1.Cross(qp2)).dot(p1.Cross(p2))
+    return (b1,b2,b3x,b4,b5,b6,b7,b8)
 
 def PhiC(p1,p2,pH):
     beta = BetaV3(pH)
@@ -39,17 +40,16 @@ def PhiC(p1,p2,pH):
     return np.arccos(Cos(q1.Cross(q2),qp1.Cross(qp2)))/np.pi
 
 
-tname = 'nominal_Loose'
+tname = 'tth_observables'
 general_settings = {}
 
-Directory = os.getcwd() + '../data/DIM6TOP_LO_tth_SM_2021-12-16'
+Directory = os.getcwd() + '/../data/DIM6TOP_LO_tth_SM_2021-12-16'
 general_settings['JobName'] = ''
 general_settings['OutDir'] = '../PythiumTest/'
 general_settings['SkipMissingFiles'] = True
 general_settings['DumpToFormat'] = 'H5'
 
 sample_dir = Directory + '/Events/run_01/'
-#sample_dir.extend([Directory + '/Events/run_{}/'.format(i) for i in range(10,12)])
       
 branches = {}
 parton_tags = ['top','tbar','higgs']
@@ -67,21 +67,21 @@ for ptag in parton_tags:
             Branch(ptag+'_pt','pt', args = [ptag+'_p4'],
                         args_types=[Branch],isprop=True)
       ])
-branchList.extend([
-      Branch('ttbar_dphi',DeltaPhi, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ttbar_deta',DeltaEta, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ttbar_dR',DeltaR, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ttbar_M',InvMass, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_dphi',DeltaPhi, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_deta',DeltaEta, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_dR',DeltaR, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_M',InvMass, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ht_dphi',DeltaPhi, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('ht_deta',DeltaEta, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('ht_dR',DeltaR, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('ht_M',InvMass, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('httbar_M',InvMass, args = ['higgs_p4','top_p4','tbar_p4'], args_types=[Branch]*3)
-])
+#branchList.extend([
+#      Branch('ttbar_dphi',DeltaPhi, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('ttbar_deta',DeltaEta, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('ttbar_dR',DeltaR, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('ttbar_M',InvMass, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('htbar_dphi',DeltaPhi, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('htbar_deta',DeltaEta, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('htbar_dR',DeltaR, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('htbar_M',InvMass, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+#      Branch('ht_dphi',DeltaPhi, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+#      Branch('ht_deta',DeltaEta, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+#      Branch('ht_dR',DeltaR, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+#      Branch('ht_M',InvMass, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+#      Branch('httbar_M',InvMass, args = ['higgs_p4','top_p4','tbar_p4'], args_types=[Branch]*3)
+#])
 branches[tname] = branchList
 
 samples = [Sample(name = "SM", tag = ['run_01_tree'], 
