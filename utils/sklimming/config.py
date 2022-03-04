@@ -87,7 +87,7 @@ def validate_branches(branches, sample_name, tree):
     for branch in branches:
         if not isinstance(branch.write_name, str): # Check on branch name 
             logger.error(f"(Sample {sample_name}, Tree: {tree}) - \n Branch name must be a string, you gave {type(branch.write_name)}")
-
+        
         if not isinstance(branch.isprop, bool):
             logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
                             Branch 'isprop' must either be a bool") 

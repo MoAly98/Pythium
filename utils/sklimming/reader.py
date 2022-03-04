@@ -380,6 +380,7 @@ def create_new_branches(data: "ak.Array", new_branches: List["Branch"], mix_tree
                         data[branch.write_name] = getattr(arg, branch.alg)
                 else:
                     data[branch.write_name] = branch.alg(*args)
+
         else: 
             if branch.args_from is not None: # only care to process branches from mixed trees
                 args_from = branch.args_from  # get tree names 
