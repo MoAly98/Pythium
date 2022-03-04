@@ -16,15 +16,6 @@ def Unit3(p4):
 def Gamma(beta):
     return pow(1-beta.dot(beta),-0.5)
 
-def Pt(p4):
-    return p4.pt
-
-def Eta(p4):
-    return p4.eta
-
-def Phi(p4):
-    return p4.phi
-
 def CoMVector(*plist):
     p_com = vector.obj(px=0,py=0,pz=0,energy=0)
     for p4 in plist:
@@ -36,10 +27,10 @@ def BetaV3(*plist):
     return p_com.to_beta3()*(-1)
 
 def DeltaEta(p1,p2):
-    return Eta(p2) - Eta(p1)
+    return p2.eta - p1.eta
 
 def DeltaPhi(p1,p2):
-    deltaphi = Phi(p2) - Phi(p1)
+    deltaphi = p2.phi - p1.phi
     if deltaphi > np.pi : deltaphi = deltaphi - 2*np.pi
     elif deltaphi < -np.pi: deltaphi = deltaphi + 2*np.pi
     return deltaphi

@@ -62,10 +62,10 @@ for ptag in parton_tags:
             #Branch(ptag+'_E', ptag+'_E'),
             Branch(ptag+'_p4', momentum_4d, args = [ptag+'_Px',ptag+'_Py',ptag+'_Pz',ptag+'_M'],
                         args_types=[Branch]*4,drop=True),
-            Branch(ptag+'_eta',Eta, args = [ptag+'_p4'],
-                        args_types=[Branch]),
-            Branch(ptag+'_pt',Pt, args = [ptag+'_p4'],
-                        args_types=[Branch])
+            Branch(ptag+'_eta','eta', args = [ptag+'_p4'],
+                        args_types=[Branch],isprop=True),
+            Branch(ptag+'_pt','pt', args = [ptag+'_p4'],
+                        args_types=[Branch],isprop=True)
       ])
 branchList.extend([
       Branch('ttbar_dphi',DeltaPhi, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
