@@ -4,23 +4,52 @@ from utils.common.branches import *
 from utils.common.selection import *
 from utils.common.user_tools import *
 import numpy as np
-import misc.lorentz_functions as VF
+from misc.lorentz_functions import *
 import vector
 import awkward as ak
 
 vector.register_awkward()
+
+def TTHVars(p1,p2,beta=None):
+    qp1 = Unit3(ProtonP4(True,beta))
+    qp2 = Unit3(ProtonP4(False,beta))
+    if beta:
+        p1 = p1.boost(beta)
+        p2 = p2.boost(beta)
+    q1 = Unit3(p1)
+    q2 = Unit3(p2)
+
+    b1 = Cos(q1.cross(qp1),q2.cross(qp1))
+    b2 = (q1.Cross(qp1)).dot(q2.cross(qp1))
+    b3x = q1.x()*q2.x()/(abs(q1.cross(qp1)*abs(q2.cross(qp2))))
+    b4 = (q1.dot(qp1))*(q2.dot(qp2))
+    b5 = TripleProd(qp1,q1,q2)
+    b6 = TripleProd(qp1,q1,q2)/(abs(q1.cross(qp1))*abs(q2.cross(qp2)))
+    b7 = TripleProd(qp1,q1,q2)/abs(q1.cross(q2))
+    b8 = (qp1.Cross(qp2)).dot(p1.Cross(p2))
+
+def PhiC(p1,p2,pH):
+    beta = BetaV3(pH)
+    qp1 = Unit3(ProtonP4(True,beta))
+    qp2 = Unit3(ProtonP4(False,beta))
+    p1 = p1.boost(beta)
+    p2 = p2.boost(beta)
+    q1 = Unit3(p1)
+    q2 = Unit3(p2)
+    return np.arccos(Cos(q1.Cross(q2),qp1.Cross(qp2)))/np.pi
+
 
 tname = 'nominal_Loose'
 general_settings = {}
 
 Directory = os.getcwd() + '../data/DIM6TOP_LO_tth_SM_2021-12-16'
 general_settings['JobName'] = ''
-general_settings['OutDir'] = Directory + '/Events/run_01/'
+general_settings['OutDir'] = '../PythiumTest/'
 general_settings['SkipMissingFiles'] = True
 general_settings['DumpToFormat'] = 'H5'
 
-sample_dir = [Directory + '/Events/run_0{}/'.format(i) for i in range(1,9)]
-sample_dir.extend([Directory + '/Events/run_{}/'.format(i) for i in range(10,12)])
+sample_dir = Directory + '/Events/run_01/'
+#sample_dir.extend([Directory + '/Events/run_{}/'.format(i) for i in range(10,12)])
       
 branches = {}
 parton_tags = ['top','tbar','higgs']
@@ -31,43 +60,32 @@ for ptag in parton_tags:
             #Branch(ptag+'_Py',ptag+'_Pz'),
             #Branch(ptag+'_Pz',ptag+'_Py'),
             #Branch(ptag+'_E', ptag+'_E'),
-            Branch(ptag+'_p4', VF.Vector4D, args = [ptag+'_Px',ptag+'_Py',ptag+'_Pz',ptag+'_E'],
-                        args_types=[Branch,Branch,Branch,Branch],drop=True),
-            Branch(ptag+'_eta',VF.Eta, args = [ptag+'_p4'],
+            Branch(ptag+'_p4', momentum_4d, args = [ptag+'_Px',ptag+'_Py',ptag+'_Pz',ptag+'_M'],
+                        args_types=[Branch]*4,drop=True),
+            Branch(ptag+'_eta',Eta, args = [ptag+'_p4'],
                         args_types=[Branch]),
-            Branch(ptag+'_pt',VF.Pt, args = [ptag+'_p4'],
+            Branch(ptag+'_pt',Pt, args = [ptag+'_p4'],
                         args_types=[Branch])
       ])
 branchList.extend([
-      Branch('ttbar_dphi',VF.DeltaPhi, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ttbar_deta',VF.DeltaEta, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ttbar_dR',VF.DeltaR, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ttbar_M',VF.InvMass, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_dphi',VF.DeltaPhi, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_deta',VF.DeltaEta, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_dR',VF.DeltaR, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('htbar_M',VF.InvMass, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
-      Branch('ht_dphi',VF.DeltaPhi, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('ht_deta',VF.DeltaEta, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('ht_dR',VF.DeltaR, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('ht_M',VF.InvMass, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('httbar_M',VF.InvMass, args = ['higgs_p4','top_p4','tbar_p4'], args_types=[Branch,Branch,Branch])
+      Branch('ttbar_dphi',DeltaPhi, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('ttbar_deta',DeltaEta, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('ttbar_dR',DeltaR, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('ttbar_M',InvMass, args = ['top_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('htbar_dphi',DeltaPhi, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('htbar_deta',DeltaEta, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('htbar_dR',DeltaR, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('htbar_M',InvMass, args = ['higgs_p4','tbar_p4'], args_types=[Branch,Branch]),
+      Branch('ht_dphi',DeltaPhi, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+      Branch('ht_deta',DeltaEta, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+      Branch('ht_dR',DeltaR, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+      Branch('ht_M',InvMass, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
+      Branch('httbar_M',InvMass, args = ['higgs_p4','top_p4','tbar_p4'], args_types=[Branch]*3)
 ])
 branches[tname] = branchList
 
-#Dictionary for sample names : directories?
-
-samples = [Sample(name = "ttb", tag = ['410470_user'], 
-                  where = sample_dir,branches = branches),
-            Sample(name = "ttc", tag = ['410470_user'], 
-                  where = sample_dir,branches = branches),
-            Sample(name = "ttlight", tag = ['410470_user'], 
-                  where = sample_dir,branches = branches),   
-            Sample(name = "sgtop_Wtchan", tag = ['410646_user', '410647_user'], 
-                  where = sample_dir,branches = branches),
-            Sample(name = "sgtop_Wtchan", tag = ['410658_user', '410659_user'], 
-                  where = sample_dir,branches = branches)
-            ]
+samples = [Sample(name = "SM", tag = ['run_01_tree'], 
+                  where = sample_dir,branches = branches)]
 
 #Legacy code. example for selection cuts
 #def preselec(njets,nbjets,lep_tight, foam,taus_pt):
