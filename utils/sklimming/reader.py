@@ -366,12 +366,20 @@ def create_new_branches(data: "ak.Array", new_branches: List["Branch"], mix_tree
         if len(set([br.write_name for br in new_branches]).intersection(set(branch.alg_args)))!=0:
             new_branches_from_others.append(branch)
             continue
+
         # if branches computed from multiple trees is not allowed 
         if not mix_trees:  # (initial call to this method comes here)
             if branch.args_from is None: #  check the branch doesn't need args from multiple trees
                 # Get args and execute the new beanch algo 
                 args = [data[arg] if branch.alg_arg_types[i] == Branch else arg for i, arg in enumerate(branch.alg_args)]
-                data[branch.write_name] = branch.alg(*args)
+                if branch.isprop:
+                    if len(args)>1:
+                        logger.error(f"Branch {branch.write_name} is supposed to be a propery of another branch, but you passed multiple args to 'args'")
+                    else:
+                        arg = args[0]
+                        data[branch.write_name] = getattr(arg, branch.alg)
+                else:
+                    data[branch.write_name] = branch.alg(*args)
         else: 
             if branch.args_from is not None: # only care to process branches from mixed trees
                 args_from = branch.args_from  # get tree names 
