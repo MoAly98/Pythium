@@ -16,6 +16,9 @@ RUN useradd -m docker && \
     chown -R --from=root docker /home/docker
 WORKDIR /home/docker/pythium
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> origin/Konrad-Dev
 COPY ./Trial_Data/ ./Trial_Data/
 COPY ./utils/ ./utils/
 COPY ./misc/ ./misc/
@@ -23,6 +26,7 @@ RUN mkdir ./Brian_code
 COPY ./fromBrian/ ./Brian_code/
 ADD ./*.py utils/*.py misc/*.py misc/*.png ./
 RUN chown -R --from=root docker /home/docker
+<<<<<<< HEAD
 =======
 run mkdir utils scripts configs
 ADD ./utils/ ./utils/
@@ -30,4 +34,6 @@ ADD ./scripts/ ./scripts/
 ADD ./configs/ ./configs/
 ADD ./misc/*.py ./misc/*.png ./misc/
 >>>>>>> origin/main
+=======
+>>>>>>> origin/Konrad-Dev
 USER docker
