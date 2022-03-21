@@ -87,15 +87,20 @@ def validate_branches(branches, sample_name, tree):
     for branch in branches:
         if not isinstance(branch.write_name, str): # Check on branch name 
             logger.error(f"(Sample {sample_name}, Tree: {tree}) - \n Branch name must be a string, you gave {type(branch.write_name)}")
-        if not isinstance(branch.alg, (types.FunctionType, str)): # Check on branch algorithm 
+        
+        if not isinstance(branch.isprop, bool):
+            logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
+                            Branch 'isprop' must either be a bool") 
+
+        if not isinstance(branch.alg, str) and not callable(branch.alg): # Check on branch algorithm 
             logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
                             Branch 'alg' must either be a function or a string with branch name in input file")
-        if isinstance(branch.alg, types.FunctionType) and  branch.alg_args is None: # check branch algo gets arg if needed
-            logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
-                            You provided a function to calculate new branch but not 'args'")
-        if isinstance(branch.alg, types.FunctionType) and  branch.alg_arg_types is None: # check branch algo gets arg types if needed
-            logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
-                            You provided a function to calculate new branch but not 'args_types'")
+        if (callable(branch.alg) or branch.isprop) and  branch.alg_args is None: # check branch algo gets arg if needed
+                logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
+                              You provided a function/property name to calculate new branch but not 'args'")
+        if (callable(branch.alg) or branch.isprop) and  branch.alg_arg_types is None: # check branch algo gets arg types if needed
+                logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
+                               You provided a function/property name to calculate new branch but not 'args_types'")
         if branch.alg_args is not None and branch.alg_arg_types is not None:
             if len(branch.alg_args) != len(branch.alg_arg_types):
                 logger.error(f"(Sample: {sample_name}, Tree: {tree}, Branch: {branch.write_name}) - \n \
