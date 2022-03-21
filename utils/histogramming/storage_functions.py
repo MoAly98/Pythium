@@ -322,10 +322,6 @@ class HistoMaker:
 
         return combined_hists, temp
     
-    
-
-
-
 
 def combine_dicts(dict_list):
     """

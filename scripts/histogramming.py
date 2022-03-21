@@ -1,6 +1,11 @@
+import os,sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
+
 import pickle
-import histogramming_config as hf
-import Histogramming.storage_functions as sf
+import configs.histogramming_config as hf
+import utils.histogramming.storage_functions as sf
 
 def run():
 
@@ -13,6 +18,8 @@ def run():
     print(f'Client Dashboard: {client.dashboard_link}')
 
     x = histogramming.create_file_list(**hf.file_list)
+
+    print (f"n_of_files = {len(x)}")
 
     histogramming.compute_histograms(**hf.computation_params)
 

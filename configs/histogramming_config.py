@@ -1,6 +1,6 @@
-import Histogramming.storage_functions as sf
-import Histogramming.hist_vars as hist_vars
-from Histogramming.cross_product_backend import XP_Sample, XP_Region, XP_Systematics
+import utils.histogramming.storage_functions as sf
+import configs.hist_vars as hist_vars
+from utils.histogramming.cross_product_backend import XP_Sample, XP_Region, XP_Systematics
 
 
 var_dict = sf.combine_dicts([hist_vars.var_main, hist_vars.var_series, hist_vars.var_beta, 
@@ -13,7 +13,7 @@ client_params = {
 }
 
 file_list = {
-    "top_directory" : '/eos/atlas/atlascerngroupdisk/perf-jets/JSS/WTopBackgroundSF2019/UFO_test/slimmed_SEP_v2/',
+    "top_directory" : '/eos/atlas/atlascerngroupdisk/perf-jets/JSS/WTopBackgroundSF2019/UFO_test/slimmed_SEP/',
     "file_regex" : '(?=^[^.].)(.*gammajet_210921.*|.*15.*)(.*h5$)'
 }
 
