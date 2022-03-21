@@ -118,6 +118,8 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
             None 
         '''
         skip_missing_files = cfg['settings']['skipmissingfiles']
+        if len(paths)==0:
+            logger.error("Input paths not found..")
         for path in paths:
             logger.info(f'Processing data from the following path: \n {path}')
             files = glob.glob(path) # Get list of files matching path regex
