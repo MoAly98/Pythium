@@ -6,6 +6,8 @@ from utils.histogramming.cross_product_backend import XP_Sample, XP_Region, XP_S
 var_dict = sf.combine_dicts([hist_vars.var_main, hist_vars.var_series, hist_vars.var_beta, 
                                hist_vars.var_ecf_beta, hist_vars.var_dichoric, hist_vars.var_ecfg])
 
+observables = {'bdt_0' :            Regular(20, 0, 1, name='x', label=r'$p_{T}$[MeV]'  )}
+
 client_params = {
     "n_workers" : 4,
     "memory_limit" : '5GB',
@@ -13,7 +15,7 @@ client_params = {
 }
 
 file_list = {
-    "top_directory" : '/eos/atlas/atlascerngroupdisk/perf-jets/JSS/WTopBackgroundSF2019/UFO_test/slimmed_SEP/',
+    "top_directory" : '/afs/cern.ch/user/k/kmalirz/pythium/temp',
     "file_regex" : '(?=^[^.].)(.*gammajet_210921.*|.*15.*)(.*h5$)'
 }
 
@@ -26,21 +28,22 @@ out_dir = '/tmp/kmalirz'
 
 
 Samples = [
-    XP_Sample(regex = True, top_directory = file_list['top_directory'], 
-    file_regex = '(?=^[^.].)(.*gammajet_210921.*)(.*15.*)(.*h5$)', name = 'test1'),
-    XP_Sample(regex = True, top_directory = file_list['top_directory'], 
-    file_regex = '(?=^[^.].)(.*gammajet_210921.*)(.*16.*)(.*h5$)', name = 'test2')
+    XP_Sample(name = 'ttb_PP8_AFII', regex = True, top_directory = file_list['top_directory'], 
+    file_regex = '(.*ttb_PP8_AFII_chunk.*)(.*h5$)'),
+    XP_Sample(name = 'tH', regex = True, top_directory = file_list['top_directory'], 
+    file_regex = '(.*tH_chunk.*)(.*h5$)'),
+    XP_Sample(name = 'ttb', regex = True, top_directory = file_list['top_directory'], 
+    file_regex = '(.*ttb_chunk.*)(.*h5$)'),
+    XP_Sample(name = 'Data', regex = True, top_directory = file_list['top_directory'], 
+    file_regex = '(.*Data_chunk.*)(.*h5$)'),
+    XP_Sample(name = 'Fakes_Matrix', regex = True, top_directory = file_list['top_directory'], 
+    file_regex = '(.*Fakes_Matrix_chunk.*)(.*h5$)')
 ]
 
 Regions = [ #write switch function
-    XP_Region(name = 'high_pt', filter = 'rljet_pt_comb > 4*10**5'),
-    XP_Region(name = 'low_pt', filter = 'rljet_pt_comb <= 4*10**5'),
-    XP_Region(name = 'default', filter = 'rljet_pt_comb >= 0'),
-    XP_Region(name = 'test1', filter = 'rljet_pt_comb >= 0'),
-    XP_Region(name = 'test2', filter = 'rljet_pt_comb >= 10**5'),
-    XP_Region(name = 'test3', filter = 'rljet_pt_comb >= 2*10**5'),
-    XP_Region(name = 'test4', filter = 'rljet_pt_comb >= 20'),
-    XP_Region(name = 'test5', filter = 'rljet_pt_comb >= 0')
+    XP_Region(name = 'high', filter = 'bdt_0 > 0.5'),
+    XP_Region(name = 'low', filter = 'bdt_0 <= 0.5'),
+    XP_Region(name = 'default', filter = 'bdt_0 >= 0')
 ]
 
 Systematics = [ #do weights systematic
