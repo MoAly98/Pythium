@@ -59,7 +59,7 @@ class XP_Histo(XP_Systematics):
 
     def __init__(self,**kwargs):
 
-        super().__init__(self,**kwargs)
+        super().__init__(**kwargs)
 
         self.formula = kwargs.get('Formula') #pass a lambda function with a dataframe as an input
         self.Excludes = kwargs.get('Excludes')

@@ -94,7 +94,8 @@ branches[nl] = [
                 ]
 
 branches_temp[nl] = [
-                Branch('bdt_0', lambda x: x[:,0], args = ["BDT"], args_types = [Branch]) ##add foam and njest here
+                Branch('bdt_0', lambda x: x[:,0], args = ["BDT"], args_types = [Branch]), ##add foam and njest here
+                Branch()
                 ]
 
 samples = [Sample(name = "ttb_PP8_AFII", tag = ['410470_AFII*'], 

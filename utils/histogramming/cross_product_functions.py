@@ -83,11 +83,6 @@ def get_functional_def(var, function_var):
 
 def fill_all():
 
-    helper = sf.HistoMaker()
-
-    client = helper.client_start(**hc.client_params)
-
-    print(f'Client Dashboard: {client.dashboard_link}')
 
     out = []
     out_linear = []
@@ -147,7 +142,7 @@ def fill_all():
         i = i + 1
 
 
-    return out, client, naming, out_linear, naming_linear
+    return out, naming, out_linear, naming_linear
 
 def combine_samples(output,naming): #both need to be linear
 

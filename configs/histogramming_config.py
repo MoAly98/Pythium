@@ -30,7 +30,7 @@ out_dir = '/tmp/kmalirz'
 Samples_test = [
     XP_Sample(name = item.name, regex = True, top_directory = file_list['top_directory'], 
     file_regex = f'(.*{item.name}_chunk.*)(.*h5$)') for item in sklim_samples
-]
+] ## ignore for now
 
 Samples_XP = [
     XP_Sample(name = 'ttb_PP8_AFII', regex = True, top_directory = file_list['top_directory'], 
@@ -51,9 +51,16 @@ Regions = [ #write switch function
     XP_Region(name = 'default', filter = 'bdt_0 >= 0')
 ]
 
+def histo(data):
+
+    weight = data['bdt_0']*1.5
+
+    return weight
+
 Systematics = [ #do weights systematic
     XP_Overall(name = 'test', Adjustment = 0.5),
-    XP_Overall(name = 'another test', Adjustment = 0)
+    XP_Overall(name = 'another_test', Adjustment = 0),
+    XP_Histo(name = 'ATLAS_PRW_DATASF', Formula = histo)
 ]
 
 def functional_XP(sample,region,systematic):
