@@ -1,4 +1,5 @@
 import os,sys
+from random import sample
 from utils.common.samples import *
 from utils.common.branches import *
 from utils.common.selection import *
@@ -43,14 +44,26 @@ def PhiC(p1,p2,pH):
 tname = 'tth_observables'
 general_settings = {}
 
-Directory = os.getcwd() + '/../data/DIM6TOP_LO_tth_SM_2021-12-16'
+Directory = os.getcwd() + '/../data/'
 general_settings['JobName'] = ''
 general_settings['OutDir'] = '../PythiumTest/'
 general_settings['SkipMissingFiles'] = True
 general_settings['DumpToFormat'] = 'H5'
 
-sample_dir = Directory + '/Events/run_01/'
-      
+sample_SM = 'DIM6TOP_LO_tth_SM_2021-12-16/Events/run_01'
+sample_INT = {
+    'ctp'    : 'run_01',
+    'ctpI'   : 'run_02',
+    'ctG'    : 'run_03',
+    'ctGI'   : 'run_04',
+    'ctW'    : 'run_05',
+    'ctWI'   : 'run_06',
+    'cptb'   : 'run_07',
+    'cptbI'  : 'run_08',
+    'ctZ'    : 'run_09',
+    'ctZI'   : 'run_10'
+}
+
 branches = {}
 parton_tags = ['top','tbar','higgs']
 branchList = [Branch('evtWeight','evtWeight')]
@@ -81,7 +94,7 @@ branchList.extend([
 branches[tname] = branchList
 
 samples = [Sample(name = "SM", tag = ['run_01_tree'], 
-                  where = sample_dir,branches = branches)]
+                  where = Directory + 'DIM6TOP_LO_tth_SM_2021-12-16/Events/run_01',branches = branches)]
 
 #Legacy code. example for selection cuts
 #def preselec(njets,nbjets,lep_tight, foam,taus_pt):
