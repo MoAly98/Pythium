@@ -1,5 +1,5 @@
 import os
-import sys
+
 import dask
 from distributed import Client
 import numpy as np
@@ -8,6 +8,12 @@ import hist
 import re
 import subprocess
 
+import sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(parentdir)
+
+from utils.common.samples import Sample
 
 
 class XP_Sample:
@@ -16,12 +22,20 @@ class XP_Sample:
 
         self.file_list = kwargs.get('file_list',[])
         self.name = kwargs.get('name',None)
+        self.top_directory = kwargs.get('top_directory',os.getcwd())
+        self.sample_obj = kwargs.get('Sklim_Sample', None)
+        self.file_regex = kwargs.get('file_regex','(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)')
 
-        if kwargs.get('regex') == True:
+        if isinstance(kwargs.get('Sklim_Sample'), Sample):
+
+            self.name = self.sample_obj.name
+            self.regex = True
+            self.file_regex = f'(.*{self.name}_chunk.*)(.*h5$)' 
             
-            self.file_list = create_file_list(top_directory = kwargs.get('top_directory',os.getcwd()),
-            file_regex = kwargs.get('file_regex','(?=^[^.].)(.*pkl$)|(?=^[^.].)(.*h5$)'), dir_regex = kwargs.get('dir_regex','(?=^[^.].)'))
-
+        if kwargs.get('regex') == True or self.regex == True:
+            
+            self.file_list = create_file_list(top_directory = self.top_directory,
+            file_regex = self.file_regex, dir_regex = kwargs.get('dir_regex','(?=^[^.].)'))
 
 class XP_Region:
 
@@ -36,6 +50,7 @@ class XP_Systematics: #base systematic class
 
         self.name = kwargs.get('name',None)
         self.weighting = kwargs.get('weigth',1)
+        
 
     def output_weights(self,*args):
 
@@ -55,7 +70,7 @@ class XP_Overall(XP_Systematics):
         weights = np.ones(len(column_data))*(1+float(self.change))
         return weights
 
-class XP_Histo(XP_Systematics):
+class XP_Formula(XP_Systematics):
 
     def __init__(self,**kwargs):
 
@@ -70,6 +85,15 @@ class XP_Histo(XP_Systematics):
 
         return weights
 
+class XP_Histo(XP_Systematics):
+
+    def __init__(self,**kwargs):
+
+        super().__init__(**kwargs)
+
+        self.hist_to_subtract = kwargs.get('name_of_hist') # Named_hist class object
+
+
 class Named_hists:
 
     def __init__(self,**kwargs):
@@ -79,6 +103,7 @@ class Named_hists:
         self.region = kwargs.get('region')
         self.systematic = kwargs.get('systematic')
         self.file = kwargs.get('file')
+        self.systematic_object = kwargs.get('systematic_obj')
 
         
 
@@ -96,3 +121,25 @@ def create_file_list(top_directory = os.getcwd(),file_regex = '(?=^[^.].)(.*pkl$
 
         return file_names
 
+def get_XP_components(region_name: str,region_list,systematic_name: str, systematic_list, sample_name: str, sample_list):
+
+    region_object = None
+    systematic_object = None
+    sample_object = None
+
+    for region in region_list:
+
+        if region.name == region_name:
+            region_object = region
+
+    for systematic in systematic_list:
+
+        if systematic.name == systematic_name:
+            systematic_object = systematic
+
+    for sample in sample_list:
+
+        if sample.name == sample_name:
+            sample_object = sample
+
+    return region_object, systematic_obj, sample_object

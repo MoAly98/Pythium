@@ -9,6 +9,7 @@ import subprocess
 import awkward as ak
 import dask.dataframe as dd
 
+
 import sys
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -29,12 +30,12 @@ from utils.common.tools import h5py_to_ak
 #           for observable:
 #               fill
 
-@dask.delayed
-def dask_load(data_name, sample_name, branch_name):
+@dask.delayed # try to change to selective tree loading
+def dask_load(data_name, sample_name, tree_name):
 
     data = h5py_to_ak(data_name)
-    data = data[0][sample_name][branch_name]
-    data = ak.to_pandas(data)
+    data = data[0][sample_name][tree_name]
+    data = ak.to_pandas(data) #return dict 
     return data
 
 @dask.delayed
@@ -110,10 +111,10 @@ def fill_all():
 
                 for Sys in hc.Systematics:
                     # add systematic data join
+                    # if this systematic does not apply to a particular tree then skip
                     function_filter, sample_filter, systematic_weight, skip = hc.functional_XP(S.name, R.name, Sys.name) # functional definition
                     
                     filtering = get_functional_def(R.filter,function_filter)
-                    systematic_weight = get_functional_def(Sys.weighting,systematic_weight)
 
 
                     if skip:
@@ -131,7 +132,7 @@ def fill_all():
 
                         out_linear.append(temp)
 
-                        name = back.Named_hists(name = 'x', sample = S.name, region = R.name, systematic = Sys.name, file = f)
+                        name = back.Named_hists(name = 'x', sample = S.name, region = R.name, systematic = Sys.name, file = f, systematic_obj = Sys)
 
                         naming_linear.append(name)
 
@@ -178,6 +179,21 @@ def combine_samples(output,naming): #both need to be linear
                 
 
     return dict_out
+
+def substract_histograms(histograms, naming_list: back.Named_hists):
+
+    for item in naming_list:
+
+        if isinstance(item.systematic_object, back.XP_Histo):
+
+            pass
+            
+        else:
+
+            pass
+
+
+    pass
 
 #def 
 
