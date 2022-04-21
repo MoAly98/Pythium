@@ -1,4 +1,5 @@
 import numpy as np
+from utils.common.user_tools import momentum_4d
 import awkward as ak
 import vector
 
@@ -16,14 +17,14 @@ def Unit3(p4):
 def Gamma(beta):
     return pow(1-beta.dot(beta),-0.5)
 
-def CoMVector(*plist):
-    p_com = vector.obj(px=0,py=0,pz=0,energy=0)
-    for p4 in plist:
+def CoMVector(*plist): 
+    p_com = momentum_4d(0,0,0,0)
+    for p4 in plist: 
         p_com = p_com + p4
     return p_com
 
 def BetaV3(*plist):
-    p_com = CoMVector(plist)
+    p_com = CoMVector(*plist)
     return p_com.to_beta3()*(-1)
 
 def DeltaEta(p1,p2):
@@ -31,15 +32,15 @@ def DeltaEta(p1,p2):
 
 def DeltaPhi(p1,p2):
     deltaphi = p2.phi - p1.phi
-    if deltaphi > np.pi : deltaphi = deltaphi - 2*np.pi
-    elif deltaphi < -np.pi: deltaphi = deltaphi + 2*np.pi
+    deltaphi = ak.where(deltaphi>np.pi,deltaphi-2*np.pi,deltaphi)
+    deltaphi = ak.where(deltaphi<-np.pi,deltaphi+2*np.pi,deltaphi)
     return deltaphi
 
 def DeltaR(p1,p2):
     return pow(DeltaEta(p1,p2)**2 + DeltaPhi(p1,p2)**2,0.5)
 
 def InvMass(*plist):
-    p_com = CoMVector(plist)
+    p_com = CoMVector(*plist)
     return p_com.mass
 
 def Et(*plist):

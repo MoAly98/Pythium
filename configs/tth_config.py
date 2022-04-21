@@ -46,22 +46,22 @@ general_settings = {}
 
 Directory = os.getcwd() + '/../data/'
 general_settings['JobName'] = ''
-general_settings['OutDir'] = '../PythiumTest/'
+general_settings['OutDir'] = '../PythiumTest1/'
 general_settings['SkipMissingFiles'] = True
 general_settings['DumpToFormat'] = 'H5'
 
 sample_SM = 'DIM6TOP_LO_tth_SM_2021-12-16/Events/run_01'
-sample_INT = {
+sample_runs = {
     'ctp'    : 'run_01',
     'ctpI'   : 'run_02',
     'ctG'    : 'run_03',
     'ctGI'   : 'run_04',
     'ctW'    : 'run_05',
     'ctWI'   : 'run_06',
-    'cptb'   : 'run_07',
-    'cptbI'  : 'run_08',
-    'ctZ'    : 'run_09',
-    'ctZI'   : 'run_10'
+    'ctZ'    : 'run_07',
+    'ctZI'   : 'run_08',
+    'cpQM'   : 'run_10',
+    'cpt'    : 'run_11'
 }
 
 branches = {}
@@ -93,8 +93,20 @@ branchList.extend([
 ])
 branches[tname] = branchList
 
-samples = [Sample(name = "SM", tag = ['run_01_tree'], 
+samples = [Sample(name = "TTH_SM", tag = ['run_01_tree'], 
                   where = Directory + 'DIM6TOP_LO_tth_SM_2021-12-16/Events/run_01',branches = branches)]
+
+for param, run in sample_runs.items():
+    samples.append(Sample(name = "TTH_INT_"+param, 
+                  tag = [run+'_tree'],
+                  where = Directory + 'DIM6TOP_LO_tth_dim6_eq1_dim6sqr_eq1_2022-02-16/Events/'+run,
+                  branches = branches)
+                )
+    samples.append(Sample(name = "TTH_SQR_"+param, 
+                  tag = [run+'_tree'],
+                  where = Directory + 'DIM6TOP_LO_tth_dim6_eq1_dim6sqr_eq2_2022-02-16/Events/'+run,
+                  branches = branches)
+                )
 
 #Legacy code. example for selection cuts
 #def preselec(njets,nbjets,lep_tight, foam,taus_pt):
