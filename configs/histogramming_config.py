@@ -4,11 +4,10 @@ from utils.histogramming.cross_product_backend import *
 from hist.axis import Variable, Regular
 from configs.sklim_config import samples as sklim_samples
 
-var_dict = sf.combine_dicts([hist_vars.var_main, hist_vars.var_series, hist_vars.var_beta, 
+simple_obs = sf.combine_dicts([hist_vars.var_main, hist_vars.var_series, hist_vars.var_beta, 
                                hist_vars.var_ecf_beta, hist_vars.var_dichoric, hist_vars.var_ecfg])
 
 observables = {'bdt_0' :            Regular(20, 0, 1, name='x', label=r'$p_{T}$[MeV]'  )}
-
 
 
 client_params = {
@@ -24,7 +23,7 @@ file_list = {
 
 computation_params = {
     "chunk_size" : 100, 
-    "histogram_variables" : var_dict
+    "histogram_variables" : simple_obs
 }
 
 out_dir = '/tmp/kmalirz'
