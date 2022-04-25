@@ -10,16 +10,32 @@ sys.path.append(parentdir)
 import utils.histogramming.cross_product_functions as cross_product
 import utils.histogramming.cross_product_backend as backend
 import utils.histogramming.storage_functions as storage_functions
-import configs.histogramming_config as hist_config
-import configs.sklim_config as sklim_config
+import utils.histogramming.config as config
+from argparse import ArgumentParser
+
+_CFG_HELP = 'The full path to the histogramming configuration file'
+_OUTDIR_HELP = 'Directory to save outputs'
+_SKCFG_HELP = 'The full path to the sklimming configuration file'
+
+def get_args():
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('-c','--cfg', required=True, help=_CFG_HELP)
+    parser.add_argument('-sc','--skcfg', help=_SKCFG_HELP)
+    parser.add_argument('-o', '--outdir', help=_OUTDIR_HELP)
+    return parser.parse_args()
 
 def run():
+
+    args = get_args() 
+    cfg_path = args.cfg
+    hist_config = config.process(cfg_path)
+    #hist_config = config.update(hist_config, args.skcfg, args.outdir) TODO: update sklimming config location with argument
 
     helper = storage_functions.HistoMaker()
 
     print("Histomaker initialized")
 
-    client = helper.client_start(**hist_config.client_params)
+    client = helper.client_start(**hist_config['client_params'])
 
     print(f'Client Dashboard: {client.dashboard_link}')
 
@@ -28,7 +44,7 @@ def run():
     filled_histograms = dask.compute(delayed_linear)[0]
 
     named_filled_histograms = cross_product.combine_samples(filled_histograms,names_linear)
-
+    
     # histo subtraction part of the process 
 
     for Sample in named_filled_histograms.keys():
@@ -41,7 +57,7 @@ def run():
 
                     histogram_to_save = named_filled_histograms[Sample][Region][Systematic][Observable]
 
-                    with open(f"{hist_config.out_dir}/{Sample}_{Region}_{Systematic}_{Observable}_file.pkl", "wb") as f:
+                    with open(f"{hist_config['out_dir']}/{Sample}_{Region}_{Systematic}_{Observable}_file.pkl", "wb") as f:
                             pickle.dump(histogram_to_save, f)
                 
 if __name__ == '__main__':

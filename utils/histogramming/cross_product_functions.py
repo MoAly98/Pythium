@@ -16,8 +16,8 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
 import configs.hist_vars as hist_vars
-import configs.histogramming_config as hc
-import configs.sklim_config as sklim_config
+import configs.tth_histogramming_config as hc
+import configs.tth_config as sklim_config
 import utils.histogramming.storage_functions as sf
 import utils.histogramming.cross_product_backend as back
 
@@ -97,10 +97,11 @@ def fill_all():
         naming.append((S.name,[]))
         j = 0
 
+        print(S.file_list)
         for f in S.file_list:
             
             naming[i][1].append((f,[]))
-            data = dask_load(f,S.name,sklim_config.nl)            
+            data = dask_load(f,S.name,sklim_config.tname) #sklim_config.nl           
             out[i].append([])
             k = 0
             

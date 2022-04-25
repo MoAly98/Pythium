@@ -4,7 +4,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
 import pickle
-import configs.histogramming_config as hf
+import configs.tth_histogramming_config as hf
 import utils.histogramming.storage_functions as sf
 
 def run():
