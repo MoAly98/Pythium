@@ -1,4 +1,5 @@
 import os
+from pydoc import importfile
 import dask
 from distributed import Client
 import numpy as np
@@ -15,13 +16,9 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
-import configs.hist_vars as hist_vars
-import configs.tth_histogramming_config as hc
-import configs.tth_config as sklim_config
 import utils.histogramming.storage_functions as sf
 import utils.histogramming.cross_product_backend as back
-
-
+import utils.histogramming.config as config
 from utils.common.tools import h5py_to_ak 
 
 # for region:
@@ -82,7 +79,7 @@ def get_functional_def(var, function_var):
 
         return function_var
 
-def fill_all():
+def fill_all(cfg):
 
 
     out = []
@@ -91,29 +88,30 @@ def fill_all():
     naming_linear = []
     i = 0
     
-    for S in hc.Samples_XP:
+    for S in cfg['samples']:
 
         out.append([])
         naming.append((S.name,[]))
         j = 0
 
-        print(S.file_list)
+        #print(S.file_list)
         for f in S.file_list:
             
             naming[i][1].append((f,[]))
-            data = dask_load(f,S.name,sklim_config.tname) #sklim_config.nl           
+            tname = importfile(cfg['sklim_config']).general_settings['tree_name']
+            data = dask_load(f,S.name,tname)           
             out[i].append([])
             k = 0
             
-            for R in hc.Regions: 
+            for R in cfg['regions']: 
 
                 out[i][j].append([])
                 naming[i][1][j][1].append((R.name,[]))
 
-                for Sys in hc.Systematics:
+                for Sys in cfg['systematics']:
                     # add systematic data join
                     # if this systematic does not apply to a particular tree then skip
-                    function_filter, sample_filter, systematic_weight, skip = hc.functional_XP(S.name, R.name, Sys.name) # functional definition
+                    function_filter, sample_filter, systematic_weight, skip = config.functional_XP(S.name, R.name, Sys.name) # functional definition
                     
                     filtering = get_functional_def(R.filter,function_filter)
 
@@ -126,7 +124,7 @@ def fill_all():
                     else:   
                         # implement systematics
 
-                        temp = dask_fill(dask_query(data,filtering),hc.observables,Sys)
+                        temp = dask_fill(dask_query(data,filtering),cfg['observables'],Sys)
 
                         naming[i][1][j][1][k][1].append(Sys.name)                    
                         out[i][j][k].append(temp)
@@ -146,11 +144,11 @@ def fill_all():
 
     return out, naming, out_linear, naming_linear
 
-def combine_samples(output,naming): #both need to be linear
+def combine_samples(cfg,output,naming): #both need to be linear
 
     out = [] # list of samples that contains the rest of the junk
     dict_out = {}
-    obs_list = list(hc.observables)
+    obs_list = list(cfg['observables'])
     
     for output_element, naming_element in zip(output,naming):
 
@@ -287,11 +285,11 @@ def fill_dd(data,hist_dict,filter): # broken will try to fix later
     return histograms_filled
 
 
-def fill_all_experimental(multiindex_data = True): # function to play around
+def fill_all_experimental(cfg, multiindex_data = True): # function to play around
 
     helper = sf.HistoMaker()
 
-    client = helper.client_start(**hc.client_params)
+    client = helper.client_start(**cfg['client_params'])
 
     print(f'Client Dashboard: {client.dashboard_link}')
 
@@ -299,7 +297,7 @@ def fill_all_experimental(multiindex_data = True): # function to play around
     naming = []
     i = 0
     
-    for S in hc.Samples:
+    for S in cfg['samples']:
 
         out.append([])
         naming.append((S.name,[]))
@@ -316,19 +314,19 @@ def fill_all_experimental(multiindex_data = True): # function to play around
             out[i].append([])
             k = 0
             
-            for R in hc.Regions: 
+            for R in cfg['regions']: 
 
                 out[i][j].append([])
                 naming[i][1][j][1].append((R.name,[]))
 
-                for Sys in hc.Systematics:
+                for Sys in cfg['systematics']:
                     
                     filtering = R.filter
                     #add systematic function join to get weights
                     if multiindex_data: # for testing for now helper.fill is the prefered method
-                        temp = helper.fill(dask_query(data,filtering),hc.var_dict)
+                        temp = helper.fill(dask_query(data,filtering),cfg['observables'])
                     else:
-                        temp = fill_dd(data,hc.var_dict,filtering)
+                        temp = fill_dd(data,cfg['observables'],filtering)
 
                     naming[i][1][j][1][k][1].append(Sys.name)                    
                     out[i][j][k].append(temp)

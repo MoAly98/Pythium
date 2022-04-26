@@ -49,6 +49,7 @@ general_settings['JobName'] = ''
 general_settings['OutDir'] = '../PythiumTest1/'
 general_settings['SkipMissingFiles'] = True
 general_settings['DumpToFormat'] = 'H5'
+general_settings['tree_name'] = tname
 
 sample_SM = 'DIM6TOP_LO_tth_SM_2021-12-16/Events/run_01'
 sample_runs = {

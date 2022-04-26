@@ -28,9 +28,8 @@ def run():
 
     args = get_args() 
     cfg_path = args.cfg
-    hist_config = config.process(cfg_path)
-    #hist_config = config.update(hist_config, args.skcfg, args.outdir) TODO: update sklimming config location with argument
-
+    hist_config = config.process(cfg_path,args.skcfg)
+    hist_config = config.update(hist_config, args)
     helper = storage_functions.HistoMaker()
 
     print("Histomaker initialized")
@@ -39,11 +38,11 @@ def run():
 
     print(f'Client Dashboard: {client.dashboard_link}')
 
-    delayed_structure, names_structure, delayed_linear, names_linear = cross_product.fill_all()
+    delayed_structure, names_structure, delayed_linear, names_linear = cross_product.fill_all(hist_config)
 
     filled_histograms = dask.compute(delayed_linear)[0]
 
-    named_filled_histograms = cross_product.combine_samples(filled_histograms,names_linear)
+    named_filled_histograms = cross_product.combine_samples(hist_config,filled_histograms,names_linear)
     
     # histo subtraction part of the process 
 

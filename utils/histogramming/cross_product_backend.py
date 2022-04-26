@@ -49,7 +49,7 @@ class XP_Systematics: #base systematic class
     def __init__(self,**kwargs):
 
         self.name = kwargs.get('name',None)
-        self.weighting = kwargs.get('weigth',1)
+        self.weighting = kwargs.get('weight',1)
         
 
     def output_weights(self,*args):
