@@ -1,7 +1,5 @@
-from pydoc import importfile
-import utils.histogramming.storage_functions as sf
 from utils.histogramming.cross_product_backend import *
-import utils.sklimming as sklim
+from utils.histogramming.config import get_sklim_samples
 from hist.axis import Variable, Regular
 
 #TODO:
@@ -34,14 +32,13 @@ out_dir = os.getcwd() + '/../PythiumTest2/output/'
 
 sklim_config_path = 'configs/tth_config.py'
 
-Samples_XP = []
-sklim_module = importfile(sklim_config_path)
-sklim.config.validate_samples(sklim_module)
-sklim_samples = sklim_module.samples
-for item in sklim_samples:
-    Samples_XP.append(XP_Sample(name = item.name, regex=True, top_directory = file_list['top_directory'], file_regex = item.name+'_chunk0.h5')
-)
-
+Samples_XP = get_sklim_samples(sklim_config_path, file_list['top_directory'])
+#sklim_module = importfile(sklim_config_path)
+#sklim.config.validate_samples(sklim_module)
+#sklim_samples = sklim_module.samples
+#for item in sklim_samples:
+#    Samples_XP.append(XP_Sample(name = item.name, regex=True, top_directory = file_list['top_directory'], file_regex = item.name+'_chunk0.h5'))
+#
 Regions = [ #write switch function
     XP_Region(name = 'Inclusive', filter = 'higgs_pt>=0')
 ]

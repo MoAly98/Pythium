@@ -1,7 +1,8 @@
 from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
-from utils.histogramming.cross_product_backend import XP_Overall, XP_Systematics 
-from utils.common import logger 
+from utils.histogramming.cross_product_backend import XP_Systematics, XP_Sample
+from utils.common import logger
+from utils.sklimming.config import validate_samples as sklim_validate_samples
 from pydoc import importfile
 import types
 import re, os
@@ -193,3 +194,15 @@ def functional_XP(sample,region,systematic):
     else:
         skip = False
     return (None,None,None,skip) #return region_filter, sample_filter, systematic_weight, skip bool
+
+def get_sklim_samples(sklim_cfg_path, top_dir, regex_str = None):
+    sklim_module = importfile(sklim_cfg_path)
+    sklim_validate_samples(sklim_module)
+    sklim_samples = sklim_module.samples
+    sample_list = []
+    for item in sklim_samples:
+        #if regex_str is None: #FIXME what should be default?
+        #    regex_str = item.name + '_chunk0.h5'
+        sample_list.append(XP_Sample(name = item.name, regex=True, top_directory = top_dir, file_regex = item.name + '_chunk0.h5'))
+    print('sample list',sample_list)
+    return sample_list
