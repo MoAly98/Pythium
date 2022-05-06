@@ -11,13 +11,13 @@ observables = {'bdt_0' :            Regular(20, 0, 1, name='x', label=r'$p_{T}$[
 
 
 client_params = {
-    "n_workers" : 4,
-    "memory_limit" : '5GB',
+    "n_workers" : 7,
+    "memory_limit" : '3GB',
     "threads_per_worker" : 1
 }
 
 file_list = {
-    "top_directory" : '/afs/cern.ch/user/k/kmalirz/pythium/temp/',
+    "top_directory" : '/eos/user/k/kmalirz/test_data/',
     "file_regex" : '(?=^[^.].)(.*gammajet_210921.*|.*15.*)(.*h5$)'
 }
 
@@ -34,6 +34,11 @@ Samples_XP = [
 ] ## ignore for now
 
 
+file_test = create_file_list(top_directory = '/eos/user/k/kmalirz/test_data/', file_regex = '(.*h5$)')
+
+Samples_test_manual = [
+]
+
 Samples_test = [
     XP_Sample(name = 'ttb_PP8_AFII', regex = True, top_directory = file_list['top_directory'], 
     file_regex = '(.*ttb_PP8_AFII_chunk.*)(.*h5$)'),
@@ -42,7 +47,7 @@ Samples_test = [
     XP_Sample(name = 'ttb', regex = True, top_directory = file_list['top_directory'], 
     file_regex = '(.*ttb_chunk.*)(.*h5$)'),
     XP_Sample(name = 'Data', regex = True, top_directory = file_list['top_directory'], 
-    file_regex = '(.*Data_chunk.*)(.*h5$)'),
+    file_regex = '(.*Data.*)(.*h5$)'),
     XP_Sample(name = 'Fakes_Matrix', regex = True, top_directory = file_list['top_directory'], 
     file_regex = '(.*Fakes_Matrix_chunk.*)(.*h5$)')
 ]
@@ -71,7 +76,7 @@ Systematics = [ #do weights systematic
 
 def functional_XP(sample,region,systematic):
 
-    if region == 'default':
+    if region == 'temp':
 
         skip = True
     

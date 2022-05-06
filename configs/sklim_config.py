@@ -8,7 +8,7 @@ import numpy as np
 general_settings = {}
 
 general_settings['JobName'] = 'tHbb_boosted'
-general_settings['OutDir'] = '/afs/cern.ch/user/k/kmalirz/pythium/temp'
+general_settings['OutDir'] = '/eos/user/k/kmalirz/test_data'
 general_settings['SkipMissingFiles'] = True
 general_settings['DumpToFormat'] = 'H5'
 
@@ -86,11 +86,9 @@ branches["sumWeights"] = [Branch('TotalEventsWeighted','totalEventsWeighted',dro
 # Add XbbScores, HFClassification 
 branches[nl] = [
             
-                Branch('bdt_0', lambda x: x[:,0], args = ["BDT"], args_types = [Branch], drop=True),
-                
-                Branch('weight', calc_weights, args = ['nom_weight', 'xsec_weight','TotalEventsWeighted'], 
-                        args_from=['nominal_Loose','sumWeights','sumWeights'], 
-                        args_types=[Branch, Branch, Branch]),
+                Branch('bdt_0', lambda x: x[:,0], args = ["BDT"], args_types = [Branch]),
+                Branch('njets', 'njets'),
+                Branch('foam[1]', lambda x: x[:,1], args = ["foam"], args_types = [Branch])
                 ]
 
 branches_temp[nl] = [

@@ -30,6 +30,10 @@ def run():
     named_filled_histograms = cross_product.combine_samples(filled_histograms,names_linear)
 
     # histo subtraction part of the process 
+## combine files per observable in dict
+## use /eos/user/m/maly
+## jk dev check it out
+    hist_save_dict = {}
 
     for Sample in named_filled_histograms.keys():
 
@@ -39,10 +43,20 @@ def run():
 
                 for Observable in named_filled_histograms[Sample][Region][Systematic].keys():
 
+                    if hist_save_dict.get(Observable) == None:
+
+                        hist_save_dict[Observable] = {}
+
                     histogram_to_save = named_filled_histograms[Sample][Region][Systematic][Observable]
 
-                    with open(f"{hist_config.out_dir}/{Sample}_{Region}_{Systematic}_{Observable}_file.pkl", "wb") as f:
-                            pickle.dump(histogram_to_save, f)
+                    hist_save_dict[Observable][f'{Sample}_{Region}_{Systematic}'] = histogram_to_save
+
+
+    for obs in hist_save_dict.keys():
+
+        with open(f"{hist_config.out_dir}/{obs}_file.pkl", "wb") as f:
+            pickle.dump(hist_save_dict[obs], f)
+
                 
 if __name__ == '__main__':
     run()
