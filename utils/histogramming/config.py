@@ -26,7 +26,7 @@ def process(cfg_path: Union[str, Path], skl_cfg = None) -> Union[Dict[str, Any],
         with open(path,'r') as hist_cfg:
             cfg_data = hist_cfg.read()
         cfg_data = re.sub(r"(sklim_config_path =).*", r"\1 '%s'" % skl_cfg, cfg_data)
-                #what if (sklim_config_path =) not in cfg_data?
+                #FIXME what if (sklim_config_path =) not in cfg_data?
         with open(path,'w') as hist_cfg:
             hist_cfg.write(cfg_data)
 
