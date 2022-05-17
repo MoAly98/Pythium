@@ -13,7 +13,6 @@ from matplotlib import transforms
 from math import ceil
 
 
-
 class EmptyPlot(object):
     
     
@@ -945,7 +944,7 @@ class PullPlot(EmptyPlot):
             self.labelside = labelside
     
     
-    def plot_options(self, center=None, range_list=None, rcp_kw={}, **errorbar_kw):
+    def plot_options(self, center=None, rangelist=None, rcp_kw={}, **errorbar_kw):
                 
         # update rcp dictionary if passed
         self.rcps.update({k: v for k, v in rcp_kw.items() if k in mpl.rcParams})
@@ -959,12 +958,12 @@ class PullPlot(EmptyPlot):
             self.center = center
         
         # allow user to enter custom range for the x axis
-        # range_list = [xmin, xmax]
-        if range_list:
-            if isinstance(range_list, list) and len(range_list) == 2:
-                self.range_list = range_list
-                self.user_xmin = self.range_list[0]
-                self.user_xmax = self.range_list[1]
+        # rangelist = [xmin, xmax]
+        if rangelist:
+            if isinstance(rangelist, list) and len(rangelist) == 2:
+                self.rangelist = rangelist
+                self.user_xmin = self.rangelist[0]
+                self.user_xmax = self.rangelist[1]
                 self.use_custom_range = True
     
     
