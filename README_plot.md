@@ -56,7 +56,7 @@ As matplotlib makes a lot of confusion in the `rcParams` that control font sizes
 
 * Master titles = `matplotlib.rcParams['axes.titlesize']`
 * Axis tick labels (numbers and strings) = `matplotlib.rcParams['font.size']`
-* Axis titles (labels) = internal `fontsize` attribute, which is passed in as first argument in `axes_labels()` function
+* Axis titles (labels) = internal `fontsize` attribute, which is passed in as first argument in `set_axislabels()` function
 
 ### Plot internal creation
 
