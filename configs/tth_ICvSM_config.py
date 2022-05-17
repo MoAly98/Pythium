@@ -5,7 +5,6 @@ from utils.common.branches import *
 from utils.common.selection import *
 from utils.common.user_tools import *
 import numpy as np
-from misc.lorentz_functions import *
 import vector
 import awkward as ak
 
