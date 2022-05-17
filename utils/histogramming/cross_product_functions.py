@@ -185,14 +185,17 @@ def substract_histograms(histograms, naming_list: back.Named_hists):
 
         if isinstance(item.systematic_object, back.XP_Histo):
 
-            pass
+            hist_name_obj = item.systematic_object.hist_to_subtract
+            for observable in histograms[item.sample][item.region][item.systematic].keys():
+
+                histograms[item.sample][item.region][item.systematic][observable] -=  histograms[hist_name_obj.sample][hist_name_obj.region][hist_name_obj.systematic][observable]
             
         else:
 
             pass
 
 
-    pass
+    return histograms
 
 #def 
 
