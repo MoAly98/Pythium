@@ -80,6 +80,7 @@ Explanation of storage variables:
     self.data: list[str] or str; Names of all samples that are going to be plotted as points
     self.is_stack: bool
     self.errors: 'hist', 'data' or 'all'; Which samples will have errrors
+    self.shape: 'hollow' or 'full', defaults to 'full' if self.is_stack = True; Whether to plot hollow histos or filled histos. Hollow ones will have different edgecolors, while full ones will have black edgecolor and colored facecolor
 
     1  self.samples_dict = {} # {'samplename': sample}
     2  self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
@@ -102,3 +103,116 @@ Explanation of storage variables:
 8. Stores `Hist.axes[0].label` from all samples
 9. Same as above but only for histo samples
 10. Same as above but only for data samples
+
+### Coloring system
+
+A list of default colors is created in the constructor:
+
+    self.color_order = [
+        'black', 'red', 'blue', 'limegreen', 'orangered', 'magenta', 'yellow', 'aqua', 'chocolate', 'darkviolet'
+    ]
+
+These colors are used (in order) both for data and histo samples, provided plotted elements are less than 10 (lenght of `color_order`). If it is not a stack plot, `self.shape` defaults to hollow and `color_order` is used for the edgecolors of the histos and markercolors of the data points. If it is a stack plot, `self.shape` defaults to `full` and colormaps are instead used. The default colormap is `gist_rainbow`, but this can be changed in the `color_options(colormap='colormap')` public function that the user can call (one of the optional function previously mentioned). If it is NOT a stack plot BUT there are more than 10 plotted elements, colormaps are used. The function `color_options(colors=[])` also allows the user to enter specific colors for each plotted element.
+
+### Plotting methods
+
+The main function `hist_plot()` calls:
+1. `histbins_plotter()`
+
+        def histbins_plotter(self, _ax: mpl.axes.Axes, data: list =None) -> None:
+            """ Main functin to plot histogram bins """
+
+            H, _clist = self.get_samples_colors(self.histos_dict)
+            if data:
+                H = data
+                _bins = self.edges
+            else:
+                _bins = None
+
+            if self.shape == 'hollow':
+                hep.histplot(
+                    H,
+                    bins=_bins,
+                    ax=_ax,
+                    stack=self.is_stack,
+                    yerr=False,
+                    color=_clist,
+                    linewidth=self.rcps['lines.linewidth'],
+                    label=self.histolabels
+                )
+
+            elif self.shape == 'full':            
+                hep.histplot(
+                    H,
+                    bins=_bins,
+                    ax=_ax,
+                    stack=True,
+                    yerr=False,
+                    histtype='fill',
+                    facecolor=_clist,
+                    edgecolor='black',
+                    linewidth=self.rcps['lines.linewidth'],
+                    label=self.histolabels
+                )
+    
+    * Uses `hep.histplot()` but with different arguments depending on `self.shape`
+2. `scatterdata_plotter()`
+3. `histbins_errs()` if `self.errors = 'hist' or 'all'`
+
+### `set_explabel()`
+
+    def set_explabel(self, ax: mpl.axes.Axes, data=True, lumi=139) -> None:
+        """ Set experimental label inside plot and scale y axis automatically to avoid collision with plot elements """
+        
+        # generate text
+        if self.style == 'ATLAS':
+            text = hep.atlas.label(ax=ax, label=self.logotext, data=data, lumi=lumi)
+        elif self.style == 'LHCb1' or self.style == 'LHCb2':
+            text = hep.lhcb.label(ax=ax, label=self.logotext, data=data, lumi=lumi)
+        
+        # evaluate all bbox edges of the text
+        xarray = []
+        yarray = []
+        for label in text:
+            position = label.get_position()
+            T = ax.transAxes.inverted()
+            bbox = label.get_window_extent(renderer = ax.figure.canvas.renderer)
+            bbox_axes = bbox.transformed(T)
+            points = bbox_axes.get_points().tolist()
+            x = [xy[0] for xy in points]
+            y = [xy[1] for xy in points]
+            xarray += x
+            yarray += y
+            
+        # get lowest point of edges which would collide with plot
+        for x, y in zip(xarray, yarray):
+            if y == min(yarray):
+                lowest = (x, y)
+        
+        """
+        The function used to scale y axis up, hep.plot.yscale_text() below, needs to
+        detect AnchoredText objects to funcion correctly. For this reason, an invisible 
+        AnchoredText object is created right below the text and only then the yscale 
+        function is called
+        """
+        
+        # create and put invisible AnchoredText object
+        from matplotlib.offsetbox import AnchoredText
+        anch_text = AnchoredText(
+            "", 
+            loc='lower left', 
+            bbox_to_anchor=lowest,
+            bbox_transform=ax.transAxes,
+            borderpad=0,
+            frameon=False
+        )
+        ax.add_artist(anch_text)
+
+        # I dont know why but an ax.scatter() function needs to be called before
+        # the yscale function in order to not crash with an error...
+        # I also found out that the yscale funcion to scale the y axis in case
+        # of a big legend in the plot, also dont work without this scatter call
+        ax.scatter(0, 0, visible=False)
+        hep.plot.yscale_text(ax)
+
+Generates ATLAS logo inside plot (for now works only for Hist1D and RatioPlot, others use directly the `hep.atlas.text`). To allow for `hep.plot.yscale_text` (mplhep function that increases $y$ axis to fit any text in the plot) to work properly, since this function only detects `matplotlib.AncoredText` objects, an empty one is created right under the ATLAS logo, then the function is called. The bbox evaluation is to determine the lower right corner of the ATLAS logo generated with `hep.atlas.label`.
