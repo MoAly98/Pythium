@@ -72,6 +72,23 @@ This is handled by private functions present in `EmptyPlot`. When `create()` is 
 
 Then, after these core functions are called, `create()` will call other internal functions that ultimately lead to either matplotlib calls (`ax.errorbar()`, `ax.stairs()` etc.) or mplhep functions (`hep.histplot()`, `hist2dplot()`).
 
+### rcParams
+
+rcParams are stored in a dictionary called `self.rcps` created by constructor of `EmptyPlot`. The current default dictionary is shown below. Other classes that inherit from `EmptyPlot` will then add other entries, updating `self.rcps`.
+
+        self.rcps = {
+            'xaxis.labellocation' : 'right', # location of x label w.r.t. x axis
+            'yaxis.labellocation' : 'top', # location of y label w.r.t. y axis
+            'axes.labelpad'       : 1, # distance of axis label from axis tick labels
+            'axes.titlesize'      : 20, # master title font size
+            'font.size'           : 10, # x, y label AND ticks label AND legend font size
+            'lines.linewidth'     : 1,
+            'lines.marker'        : '.', # marker style
+            'lines.markersize'    : 8,
+        }
+
+The user has access (can add and modify) this dictionary by creating their own and passing it in the `plot_options(rcp_kw={})` public function.
+
 ## Hist1D
 
 Explanation of storage variables:
@@ -112,7 +129,24 @@ A list of default colors is created in the constructor:
         'black', 'red', 'blue', 'limegreen', 'orangered', 'magenta', 'yellow', 'aqua', 'chocolate', 'darkviolet'
     ]
 
-These colors are used (in order) both for data and histo samples, provided plotted elements are less than 10 (lenght of `color_order`). If it is not a stack plot, `self.shape` defaults to hollow and `color_order` is used for the edgecolors of the histos and markercolors of the data points. If it is a stack plot, `self.shape` defaults to `full` and colormaps are instead used. The default colormap is `gist_rainbow`, but this can be changed in the `color_options(colormap='colormap')` public function that the user can call (one of the optional function previously mentioned). If it is NOT a stack plot BUT there are more than 10 plotted elements, colormaps are used. The function `color_options(colors=[])` also allows the user to enter specific colors for each plotted element.
+These colors are used (in order) both for data and histo samples, provided plotted elements are less than 10 (lenght of `color_order`). If it is not a stack plot, `self.shape` defaults to hollow and `color_order` is used for the edgecolors of the histos and markercolors of the data points. If it is a stack plot, `self.shape` defaults to `full` and colormaps are instead used. The default colormap is `gist_rainbow`, but this can be changed in the `color_options(colormap='colormap')` public function that the user can call (one of the optional function previously mentioned). If it is NOT a stack plot BUT there are more than 10 plotted elements, colormaps are used. The function `color_options(colors=[])` also allows the user to enter specific colors for each plotted element, provided the length of the passed list is equal to the length of the samples passed.
+
+Colors get assigned by the `assign_colors()` private function:
+
+    def assign_colors(self, custom: list = None) -> None:
+        """ Fills colors_dict accordingly """
+        
+        for i, samplename in enumerate(self.samples_dict.keys()):
+            if custom:
+                self.colors_dict[samplename] = custom[i]
+            else:
+                if len(self.samples) > 10 or self.is_stack:
+                    cmaplist = self.colorlist_gen(len(self.samples))
+                    self.colors_dict[samplename] = cmaplist[i]
+                else:
+                    self.colors_dict[samplename] = self.color_order[i]
+           
+This gets called the first time in the constructor, but can be recalled if `color_options()` has been called, so that `colors_dict` gets properly updated.
 
 ### Plotting methods
 
@@ -154,10 +188,42 @@ The main function `hist_plot()` calls:
                     linewidth=self.rcps['lines.linewidth'],
                     label=self.histolabels
                 )
-    
-    * Uses `hep.histplot()` but with different arguments depending on `self.shape`
+                
+    * Uses `hep.histplot()` but with different arguments depending on `self.shape`. A custom data (list of raw values) can be passed to it since `hep.histplot()` supports input of both raw data and Hist objects.
 2. `scatterdata_plotter()`
-3. `histbins_errs()` if `self.errors = 'hist' or 'all'`
+
+        def scatterdata_plotter(self, _ax: mpl.axes.Axes, data: list =None) -> None:
+            """ Main function to plot scatter data points """
+
+            H, _clist = self.get_samples_colors(self.data_dict)
+            if data:
+                H = data
+                _bins = self.edges
+            else:
+                _bins = None
+
+            # yerr=True in hep.histplot uses Poisson errors (sqrtN)
+            if self.errors == 'data' or self.errors == 'all':
+                _yerr = True
+            else:
+                _yerr = False
+
+            hep.histplot(
+                H,
+                bins=_bins,
+                ax=_ax, 
+                stack=self.is_stack, 
+                yerr=_yerr, 
+                histtype='errorbar',
+                color=_clist,
+                marker=self.rcps['lines.marker'],
+                markersize=self.rcps['lines.markersize'],
+                label=self.scatterlabels
+            )
+    * If `self.errors = 'data' or 'all'`, the `yerr` argument is set to True. This is by default a simple error of sqrt(N). Markerstyle and markersize are drawn from `self.rcps` so they are modifiable from the user.
+
+4. `histbins_errs()` if `self.errors = 'hist' or 'all'`
+    * This is to put the gray hatched bins around the top of histos bins. If it is a stack plot, the error will go only on the top of stack histograms and will be fixed to black, if it is not a stack plot, each hitos will have their own error bins of the same color (different for each of them).
 
 ### `set_explabel()`
 
