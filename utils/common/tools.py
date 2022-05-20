@@ -32,4 +32,5 @@ def h5py_to_ak(infile):
                                 )
             final_data[sample_name][tree_name] = data
         cuts[sample_name] = sel
+    file.close()
     return final_data, cuts
