@@ -74,4 +74,24 @@ Then, after these core functions are called, `create()` will call other internal
 
 ## Hist1D
 
+Explanation of storage variables:
 
+    self.samples: list[str] or str; Names of all samples
+    self.data: list[str] or str; Names of all samples that are going to be plotted as points
+    self.is_stack: bool
+    self.errors: 'hist', 'data' or 'all'; Which samples will have errrors
+
+    1 self.samples_dict = {} # {'samplename': sample}
+    2 self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
+    3 self.histos_list  = [] # list of hist objects that will be plotted as histo bins
+    4 self.data_dict    = {} # {'sameplname': sample (which will be plotted as data point)}
+    5 self.plot_types   = {} # {'samplename': 'histo' or 'data'}
+    6 self.colors_dict  = {} # {'samplename': 'color'}
+    7 self.names         = []
+    8 self.labels        = []
+    9 self.histolabels   = []
+    10self.scatterlabels = []
+
+1. {samplename: str, sample: Hist}; Stores all the input samples
+2. {samplename: str, sample: Hist}; Stores all samples that are NOT in `self.data`
+3. [samplefsdfsafa
