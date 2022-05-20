@@ -367,3 +367,7 @@ this function calls `custom_yaxis()`, which does the following:
         overlap with various other plot elements. If edges is set to True,
         the first and last ticks will be shown in the plot.
         """
+
+# Things that are not supported in the existing classes
+
+![image](https://user-images.githubusercontent.com/91688435/169566841-7ecf7125-e668-4d29-994c-718c3f969780.png)
