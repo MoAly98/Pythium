@@ -1,6 +1,6 @@
 # Pythium Plots
 
-A (quick) thorough walkthrough of how plotting classes work in Pythium.
+A (quick) thorough walkthrough of how plotting classes work in Pythium. Currently, Jupyter test files that are present in the `plot_misc` file contain plot classes and examples of use cases. The file `plot_classes.py` stores all classes.
 
 ## General Structure
 
@@ -46,7 +46,7 @@ The terms `xmain`, `xtop`, `xbot` etc. refer to the follownig subplot scheme:
 
 Each plot type (ratio, pull, projection, cmatrix) will be a combination of these subplots (Ax objects). For example, the ratio plot will be made of main and bot subplots and the projection plot will be made of main, top and right subplots. The left subplot is currently not used and might be deleted in the future if no use cases are found. So for example, in `RatioPlot` the user can pass in `set_axislabels()` arguments of `ymain`, `ybot` and `xbot`. `xmain` can be passed but will be ignored since there is no $x$ axis label between the main subplot and the bottom subplot (there's not axis tick labels either, for that matter).
 
-The space between the subplots is called 'spacing' throughout all classes.
+The space between the subplots is called `spacing` throughout all classes.
 
 ### Font sizes
 
@@ -73,4 +73,5 @@ This is handled by private functions present in `EmptyPlot`. When `create()` is 
 Then, after these core functions are called, `create()` will call other internal functions that ultimately lead to either matplotlib calls (`ax.errorbar()`, `ax.stairs()` etc.) or mplhep functions (`hep.histplot()`, `hist2dplot()`).
 
 ## Hist1D
+
 
