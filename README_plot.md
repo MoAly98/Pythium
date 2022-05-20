@@ -81,17 +81,24 @@ Explanation of storage variables:
     self.is_stack: bool
     self.errors: 'hist', 'data' or 'all'; Which samples will have errrors
 
-    1 self.samples_dict = {} # {'samplename': sample}
-    2 self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
-    3 self.histos_list  = [] # list of hist objects that will be plotted as histo bins
-    4 self.data_dict    = {} # {'sameplname': sample (which will be plotted as data point)}
-    5 self.plot_types   = {} # {'samplename': 'histo' or 'data'}
-    6 self.colors_dict  = {} # {'samplename': 'color'}
-    7 self.names         = []
-    8 self.labels        = []
-    9 self.histolabels   = []
-    10self.scatterlabels = []
+    1  self.samples_dict = {} # {'samplename': sample}
+    2  self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
+    3  self.histos_list  = [] # list of hist objects that will be plotted as histo bins
+    4  self.data_dict    = {} # {'sameplname': sample (which will be plotted as data point)}
+    5  self.plot_types   = {} # {'samplename': 'histo' or 'data'}
+    6  self.colors_dict  = {} # {'samplename': 'color'}
+    7  self.names         = []
+    8  self.labels        = []
+    9  self.histolabels   = []
+    10 self.scatterlabels = []
 
 1. {samplename: str, sample: Hist}; Stores all the input samples
 2. {samplename: str, sample: Hist}; Stores all samples that are NOT in `self.data`
-3. [samplefsdfsafa
+3. [sample: Hist]; List of all Hist objects that will be plotted as histos
+4. {samplename: str, sample: Hist}; Stores all sample that will be plotted as data (points)
+5. {samplename: str, 'data' or 'histo': str}; Stores if sample is a histo or data
+6. {samplename: str, color: str}; Stores color of each sample (histos and data)
+7. Stores `Hist.axes[0].names` from all samples
+8. Stores `Hist.axes[0].label` from all samples
+9. Same as above but only for histo samples
+10. Same as above but only for data samples
