@@ -367,6 +367,12 @@ this function calls `custom_yaxis()`, which does the following:
         overlap with various other plot elements. If edges is set to True,
         the first and last ticks will be shown in the plot.
         """
+        
+## PullPlot
+
+## ProjectionPlot
+
+## CMatrixPlot
 
 # Things that are not supported in the existing classes
 
