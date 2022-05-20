@@ -358,3 +358,12 @@ To plot the error bins (currently only available for histo samples) the function
 It is also possible for the user to change the bot plot's y axis range using `ratio_options()`, so that this doesn't happen:
 
 ![image](https://user-images.githubusercontent.com/91688435/169562440-973f9994-e713-4671-a332-ebb3b9e75531.png)
+
+this function calls `custom_yaxis()`, which does the following:
+
+    def custom_yaxis(self, ylims: list, step: float =None, edges=False) -> None:
+        """
+        Allow user to manually change the bot y axis limits, which can often
+        overlap with various other plot elements. If edges is set to True,
+        the first and last ticks will be shown in the plot.
+        """
