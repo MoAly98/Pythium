@@ -4,6 +4,8 @@ matplotlib
 uproot4
 awkward1
 h5py
+pandas
+hist
 pathlib
 pydoc
 psutil
