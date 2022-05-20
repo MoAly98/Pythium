@@ -705,7 +705,7 @@ class Hist1D(EmptyPlot):
     
     def plot_options(
         self, 
-        shape: tuple = None, 
+        shape: str = None, 
         gridstring = '', 
         marker: str = None, 
         markersize: float = None, 
@@ -739,8 +739,14 @@ class Hist1D(EmptyPlot):
         if markersize:
             self.rcps['lines.markersize'] = markersize
         
+        # change number of columns in the legend
         if legendcols:
             self.legend_ncols = legendcols
+        
+        # if it is a stack plot but the shape is hollow, use color_order
+        # (otherwise would automatically switch to default colormap)
+        if self.is_stack and shape == 'hollow' and len(self.samples) <= 10:
+            self.assign_colors(self.color_order)
         
     
     def color_options(self, colors=[], colormap='', reverse=False) -> None:
@@ -776,6 +782,260 @@ class Hist1D(EmptyPlot):
             self.saveimage(save_name, dpi)
 
 
+            
+            
+class RatioPlot(Hist1D):
+    
+    
+    def __init__(self, samples=[], reference: str =None, data=[], errors: str =None, stack=False, **kwargs) -> None:
+        
+        super().__init__(samples=samples, data=data, errors=errors, stack=stack, layout=(2,1), **kwargs)
+        self.check_input
+        
+        self.reference = reference
+        
+        self.numerators = {}
+        self.denominator = {}
+        self.dvals = []
+        
+        self.check_reference()
+        self.ratiovalues_calculator()
+        
+        # default variables
+        self.spacing = 0
+        self.stretch = 4
+            
+        # bool if user put a custom y limits for bot plot
+        self.custom_ylims = False
+        
+        
+    """
+    -----------------------------------------------------------------------------------------------------
+    Private functions
+    -----------------------------------------------------------------------------------------------------
+    """ 
+    
+    def check_reference(self) -> None:
+        
+        if self.reference:
+            if self.reference in self.samples:
+                for samplename, sample in self.samples_dict.items():
+                    if samplename == self.reference:
+                        self.denominator[samplename] = sample
+                        self.dvals = list(next(iter(self.denominator.values())).values())
+                    else:
+                        self.numerators[samplename] = sample
+            elif self.reference == 'total':
+                if self.data and len(self.data) == 1:
+                    self.numerators = self.data_dict
+                    self.dvals = self.get_stackvalues(self.histos_list)
+                else:
+                    logging.error("Please specify one (and only one) sample that will be plotted as data using the 'data' argument")
+            else:
+                logging.error("Selected reference is not in 'samples'")
+        else:
+            logging.error("Specify a reference sample which will act as the denominator for the ratio plot")
+    
+    
+    def ratiovalues_calculator(self) -> None:
+        """ Calculate and store ratio values of specified samples (numerators) """
+        
+        self.ratiovalues = {}
+        for samplename, sample in self.numerators.items():
+            self.ratiovalues[samplename] = []
+            for n, m in zip(sample.values(), self.dvals):
+                if m != 0:
+                    self.ratiovalues[samplename].append(n/m)
+                else:
+                    self.ratiovalues[samplename].append(0)
+    
+    
+    def ratio_scatters(self, samplename: str, color: str) -> None:
+        """ Used when need to plot ratio values in bot plot as scatter points """
+
+        hep.histplot(
+            # np.ones(len(self.ratiovalues[samplename])),
+            self.ratiovalues[samplename],
+            bins=self.edges,
+            ax=self.botax,
+            yerr=False, 
+            histtype='errorbar',
+            color=color,
+            marker=self.rcps['lines.marker'],
+            markersize=self.rcps['lines.markersize'],
+        )
+        
+    
+    def ratio_histbins(self, samplename: str, color: str) -> None:
+        """ Used when need to plot ratio values in bot plot as hist bins """
+        print(color)
+
+        if self.shape == 'hollow':
+            self.botax.stairs(
+                self.ratiovalues[samplename], 
+                self.edges, 
+                baseline=1,
+                color=color,
+                fill=False,
+                linewidth=self.rcps['lines.linewidth'],
+            )
+        
+        else:            
+            self.botax.stairs(
+                self.ratiovalues[samplename], 
+                self.edges, 
+                baseline=1,
+                edgecolor='black',
+                facecolor=color,
+                fill=True,
+                linewidth=self.rcps['lines.linewidth'],
+            )
+        
+        
+    def custom_yaxis(self, ylims: list, step: float =None, edges=False) -> None:
+        """
+        Allow user to manually change the bot y axis limits, which can often
+        overlap with various other plot elements. If edges is set to True,
+        the first and last ticks will be shown in the plot.
+        """
+        
+        if step is None:
+            # do something
+            step = step
+        
+        self.custom_ylims = True
+        
+        self.ylims = ylims
+        self.ystep = step
+        self.ybotrange = np.arange(ylims[0], ylims[-1]+step, step)
+        
+        # check if any tick label would have non zero decimal places,
+        # if so, leave zeros for all other tick labels as well
+        # if not, remove all decimal zeros from tick labels
+        temprange = [f'{x:.2f}' for x in self.ybotrange]
+        need1 = False
+        need2 = False
+        
+        for num in temprange[1:-1]:
+            decimals = num.split('.')[1]
+            d1 = decimals[0]
+            d2 = decimals[1]
+            
+            if d2 != '0':
+                need2 = True
+                break
+            if d1 != '0':
+                need1 = True
+        if need2:
+            self.ybotlabels = [f'{x:.2f}' for x in self.ybotrange]
+        elif need1:
+            self.ybotlabels = [f'{x:.1f}' for x in self.ybotrange]
+        else:
+            self.ybotlabels = [f'{x:.0f}' for x in self.ybotrange]            
+        
+        if not edges:
+            self.ybotlabels[0] = ''
+            self.ybotlabels[-1] = ''
+    
+    
+    def main_plot(self) -> None:
+        
+        self.hist_plot(self.mainax)
+        
+        # set x axis ticks
+        self.mainax.set_xticks(np.linspace(self.edges[0], self.edges[-1], 11))
+        self.mainax.set_xticklabels([]) # suppress x tick labels
+    
+    
+    def bot_plot(self) -> None:
+                    
+        _notused, _clist = self.get_samples_colors(self.numerators)
+        if type(_clist) != list:
+            _clist = [_clist]
+
+        # iterate through all samples in self.numerators along with corresponding color
+        for i, samplename in enumerate(self.numerators.keys()):
+            if samplename in self.data or self.data == 'all':
+                self.ratio_scatters(samplename, _clist[i])
+            else:
+                self.ratio_histbins(samplename, _clist[i])
+        
+        # plot error histograms
+        if self.errors == 'hist' or self.errors == 'all':
+            self.histbins_errs(self.botax, ratio=True)
+            
+        # set tick params
+        self.set_tickparams(self.botax, self.rcps['font.size'])
+        
+        # set x ticks
+        self.botax.set_xticks(np.linspace(self.edges[0], self.edges[-1], 11))
+        
+        # set x and y axis labels
+        self.set_xtitles(self.botax, 'xbot', self.fontsize)
+        if self.ytitles_dict['ybot']:
+            self.set_ytitles(self.botax, 'ybot', self.fontsize)
+        else:
+            self.botax.set_ylabel(f"Ratio against \n{self.reference}", fontsize=self.fontsize)
+        
+        # draw horizontal line at y=1
+        self.botax.axhline(1, -1, 2, color='k', linestyle='--', linewidth=0.7)
+
+        # in case there is custom y lims
+        if self.custom_ylims:
+            self.botax.set_ylim(self.ylims)
+            self.botax.set_yticks(self.ybotrange)
+            self.botax.set_yticklabels(self.ybotlabels, fontsize=self.rcps['font.size'])
+        
+        # put grid if requested
+        if self.need_grid:
+            self.botax.grid(axis=self.gridaxis, linestyle=self.gridline, alpha=0.3, color='k')
+        
+    
+    def ratio_plot(self) -> None:
+        
+        # main plot
+        self.main_plot()
+
+        # ratio plot
+        self.bot_plot()
+
+        
+    """
+    -----------------------------------------------------------------------------------------------------
+    Public functions
+    -----------------------------------------------------------------------------------------------------
+    """ 
+
+    
+    def ratio_options(self, ylims=[], step: float = None, edges=False) -> None:
+        
+        self.custom_yaxis(ylims, step, edges)
+    
+    
+    def figure_options(self, spacing: float = None, stretch: int = None, **figkw) -> None:
+        
+        super().figure_options(**figkw)
+        if spacing:
+            self.spacing = spacing
+        if stretch:
+            self.stretch = stretch
+
+    
+    def create(self, save_name='', dpi=1000) -> None:
+        
+        # create plot figure and subplots
+        self.create_canvas()
+        self.make_grid(hspace=self.spacing, height_ratios=[self.stretch,1])
+        self.mainax = self.make_subplot(0, 1, 0, 1)
+        self.botax  = self.make_subplot(1, 2, 0, 1)
+        
+        # make plot
+        self.ratio_plot()
+        
+        if save_name:
+            self.saveimage(save_name, dpi)
+
+            
             
             
 class PullPlot(EmptyPlot):
@@ -908,7 +1168,7 @@ class PullPlot(EmptyPlot):
         self.ax.fill_between([-1+self.center, 1+self.center], -1, self.nvariables, color=self.onesigmacolor)
         
         # put dotted line in the center value
-        self.ax.axvline(self.center, color='k', linestyle='--', linewidth=0.6)
+        self.ax.axvline(self.center, color='k', linestyle='--', linewidth=0.6, ymin=-1, ymax=2) # ymin, ymax to fix bug
         
         # set x and y axis
         self.set_xaxis()
@@ -945,7 +1205,7 @@ class PullPlot(EmptyPlot):
             self.labelside = labelside
     
     
-    def plot_options(self, center=None, range_list=None, rcp_kw={}, **errorbar_kw):
+    def plot_options(self, center=None, rangelist=None, rcp_kw={}, **errorbar_kw):
                 
         # update rcp dictionary if passed
         self.rcps.update({k: v for k, v in rcp_kw.items() if k in mpl.rcParams})
@@ -959,22 +1219,22 @@ class PullPlot(EmptyPlot):
             self.center = center
         
         # allow user to enter custom range for the x axis
-        # range_list = [xmin, xmax]
-        if range_list:
-            if isinstance(range_list, list) and len(range_list) == 2:
-                self.range_list = range_list
-                self.user_xmin = self.range_list[0]
-                self.user_xmax = self.range_list[1]
+        # rangelist = [xmin, xmax]
+        if rangelist:
+            if isinstance(rangelist, list) and len(rangelist) == 2:
+                self.rangelist = rangelist
+                self.user_xmin = self.rangelist[0]
+                self.user_xmax = self.rangelist[1]
                 self.use_custom_range = True
     
     
-    def color_options(self, markercolor=None, onesigmacolor=None, twosigmacolor=None):
+    def color_options(self, marker=None, onesigma=None, twosigma=None):
         
-        self.onesigmacolor = onesigmacolor
-        self.twosigmacolor = twosigmacolor
+        self.onesigmacolor = onesigma
+        self.twosigmacolor = twosigma
         
-        if markercolor:
-            self.errorbar_kw['color'] = markercolor
+        if marker:
+            self.errorbar_kw['color'] = marker
         
         
     def create(self, save_name='', dpi=1000):
@@ -987,6 +1247,345 @@ class PullPlot(EmptyPlot):
         # make plot
         self.pull_plot()
         # self.fig.set_tight_layout(True) # tightlayout might be useful?
+        
+        if save_name:
+            self.saveimage(save_name, dpi)
+
+            
+            
+            
+class ProjectionPlot(EmptyPlot):
+    
+    
+    def __init__(self, obj, **kwargs):
+        
+        super().__init__(layout=(2,2), **kwargs)
+        self.hist = obj
+        self.set_color() # set default colormap
+        
+        # default attributes
+        self.spacing = 0.2
+        self.stretch = 4
+        self.need_grid = False
+        
+        self.store_data(self.hist)
+    
+    
+    """
+    -----------------------------------------------------------------------------------------------------
+    Private functions
+    -----------------------------------------------------------------------------------------------------
+    """
+        
+    def store_data(self, obj):
+        """ Retrieve x and y data from obj """
+        
+        self.pd_data = pd.DataFrame(obj.to_numpy()[0])
+        self.xsum = self.pd_data.sum(axis=0).to_list()
+        self.ysum = self.pd_data.sum(axis=1).to_list()
+        self.edges = [x for [x] in [list(obj.axes.edges[0][i]) for i in range(len(obj.axes.edges[0]))]]
+        
+    
+    def side_plots(self):
+        """ Make vertical and horizontal plots """
+        
+        # horizontal plot
+        hep.histplot(
+            self.xsum, 
+            bins=self.edges, 
+            ax=self.h_ax, 
+            color='k', 
+            zorder=3
+        )
+        self.set_h_ax()
+
+        # adjust ticks
+        self.h_ax.ticklabel_format(style='plain')
+        for ytick in self.h_ax.yaxis.get_major_ticks():
+            ytick.label.set_fontsize(self.rcps['font.size'])
+        
+        # vertical plot
+        hep.histplot(
+            self.ysum, 
+            bins=self.edges, 
+            ax=self.v_ax, 
+            color='k', 
+            zorder=3, 
+            orientation='horizontal'
+        )
+        self.set_v_ax()
+
+        # adjust ticks
+        self.v_ax.ticklabel_format(style='plain')
+        for xtick in self.v_ax.xaxis.get_major_ticks():
+            xtick.label.set_fontsize(self.rcps['font.size'])
+        
+        # put grid on both subplots if needed
+        if self.need_grid:
+            self.h_ax.grid(linestyle=self.gridline, alpha=0.3, color='k', axis='x')
+            self.h_ax.grid(linestyle=self.gridline, alpha=0.3, color='k', axis='y', which='minor')
+            self.v_ax.grid(linestyle=self.gridline, alpha=0.3, color='k', axis='y')
+            self.v_ax.grid(linestyle=self.gridline, alpha=0.3, color='k', axis='x', which='minor')
+            self.h_ax.set_axisbelow(True)
+            self.v_ax.set_axisbelow(True)
+        
+        
+    def main_plot(self):
+        """ Main plot function """
+        
+        hep.hist2dplot(self.hist, ax=self.main_ax, cbar=False)
+        
+        # main plot
+        _range = np.arange(self.edges[0], self.edges[-1]+0.5, 0.5)
+        label_list = [f'{x:.1f}' for x in _range]
+        
+        # x axis
+        self.main_ax.set_xticks(_range)
+        self.main_ax.set_xticklabels(label_list, fontsize=self.rcps['font.size'])
+        
+        # y axis
+        self.main_ax.set_yticks(_range)
+        self.main_ax.set_yticklabels(label_list, fontsize=self.rcps['font.size'])
+        
+        # set title
+        self.fig.suptitle(self.mastertitle, fontsize=self.rcps['axes.titlesize'])
+        
+        # set x and y axis labels
+        self.set_xtitles(self.main_ax, 'xmain', self.fontsize, loc=self.rcps['xaxis.labellocation'])
+        self.set_ytitles(self.main_ax, 'ymain', self.fontsize, loc=self.rcps['yaxis.labellocation'])
+        self.set_xtitles(self.v_ax, 'xright', self.fontsize, loc=self.rcps['xaxis.labellocation'])
+        self.set_ytitles(self.h_ax, 'ytop', self.fontsize, loc=self.rcps['yaxis.labellocation'])
+        
+        # put atlas logo
+        hep.atlas.text(self.logotext, ax=self.h_ax, loc=0)
+
+        
+    def set_h_ax(self, **hax_kw):
+        """ Horizonthal subplot """
+        
+        self.hax_kw = {
+            'axis'       :'x',
+            'labelbottom': False,
+            'labelsize'  : 5
+        }
+        self.hax_kw.update(hax_kw)
+                
+        # self.h_ax.set_xlim(-1, 1)
+        self.h_ax.tick_params(**self.hax_kw)
+        
+        
+    def set_v_ax(self, **vax_kw):
+        """ Vertical subplot """
+        
+        self.vax_kw = {
+            'axis'     :'y',
+            'labelleft': False,
+            'labelsize': 5
+        }
+        self.vax_kw.update(vax_kw)
+                
+        # self.v_ax.set_ylim(-1, 1)
+        self.v_ax.tick_params(**self.vax_kw)
+
+    
+    """
+    -----------------------------------------------------------------------------------------------------
+    Public functions
+    -----------------------------------------------------------------------------------------------------
+    """ 
+    
+    def figure_options(self, spacing=None, stretch=None, **figkw):
+        
+        super().figure_options(**figkw)
+        
+        if spacing:
+            self.spacing = spacing
+        if stretch:
+            self.stretch = stretch
+    
+    
+    def plot_options(self, gridstring='', rcp_kw={}):
+                        
+        # update rcp dictionary if passed
+        self.rcps.update({k: v for k, v in rcp_kw.items() if k in mpl.rcParams})
+        self.config_rcParams(self.rcps)
+
+        # grid options
+        if gridstring:
+            self.gridstring_converter(gridstring)
+            self.need_grid = True
+    
+    
+    def color_options(self, colormap=None, reverse=False):
+        
+        self.set_color(colormap, reverse)
+
+        
+    def create(self, save_name='', dpi=1000):
+        
+        # create plot figure and subplots
+        self.create_canvas()
+        self.make_grid(
+            hspace=self.spacing, 
+            wspace=self.spacing, 
+            height_ratios=[1, self.stretch], 
+            width_ratios=[self.stretch, 1]
+        )
+        self.main_ax = self.make_subplot(1, 2, 0, 1)
+        self.h_ax = self.make_subplot(0, 1, 0, 1) # horizonthal subplot
+        self.v_ax = self.make_subplot(1, 2, 1, 2) # vertical subplot
+        
+        # make plot
+        self.side_plots()
+        self.main_plot()
+        
+        if save_name:
+            self.saveimage(save_name, dpi)
+            
+            
+            
+            
+class CMatrixPlot(EmptyPlot):
+    
+    
+    def __init__(self, obj, threshold, **kwargs):        
+        
+        super().__init__(**kwargs)
+        self.hist = obj
+        
+        # cut original data
+        self.hist = self.cut_data(threshold)
+        self.list_vals = self.hist.index.to_list()
+        
+        # set figsize based on data size
+        n = len(self.hist)
+        self.figsize = (n/3, n/3)
+        
+        # set default colormap
+        self.set_color(colormap='bwr')
+        
+        # default attributes
+        self.setcbar = False
+        self.decimal = 1
+    
+    
+    """
+    -----------------------------------------------------------------------------------------------------
+    Private functions
+    -----------------------------------------------------------------------------------------------------
+    """    
+    
+    def cut_data(self, threshold):
+        """ Filter correlation data based on numerical threshold """
+        """ 
+        NOTE: currently, if any data is lower than threshold, entire row/column
+              gets cut, need adjustments
+        """
+        
+        data = self.hist
+        
+        # filter rows
+        data = data[abs(data.iloc[0]) >= threshold]
+        
+        # filter columns based on filtered rows
+        data = data.loc[:,[x for x in data.index]]
+        
+        return data*100
+
+        
+    def c_matrix(self, **kwargs):
+
+        # plot the heatmap
+        im = self.ax.imshow(self.hist, **kwargs, cmap=mpl.cm.get_cmap(self.user_cmap))
+        
+        # set color limits to -1, 1 (which is the values correlation can take)
+        im.set_clim(-100,100)
+        
+        if self.setcbar:
+            # create new ax for colorbar
+            cax = self.fig.add_axes(
+                [self.ax.get_position().x1 + 0.01, self.ax.get_position().y0, 0.03, self.ax.get_position().height]
+            )
+            cbar = self.fig.colorbar(im, cax=cax)
+
+            # change range of colorbar
+            cax.set_yticks(np.arange(-100, 101, 25))
+            cax.set_yticklabels(np.arange(-100, 101, 25), fontsize=10)
+            
+            # reduce tick size of colorbar
+            cax.tick_params(axis='y', which='both', length=5)
+
+        # set variable names as axis tick labels
+        self.ax.set_xticks(np.arange(len(self.list_vals)), labels=self.list_vals, fontsize=self.rcps['font.size'])
+        self.ax.set_yticks(np.arange(len(self.list_vals)), labels=self.list_vals, fontsize=self.rcps['font.size'])
+        
+        # rotate x axis labels
+        plt.setp(self.ax.get_xticklabels(), rotation=45, ha='right', rotation_mode='anchor')
+        
+        # format entries to one decimal place
+        valfmt = mpl.ticker.StrMethodFormatter('{x:.1f}')
+        
+        # put text in cells
+        for i in range(len(self.list_vals)):
+            for j in range(len(self.list_vals)):
+                self.ax.text(
+                    j, 
+                    i, 
+                    valfmt(self.hist.iloc[i][j], None), 
+                    ha='center', # horizontal alignment
+                    va='center', # vertical alignment
+                    color='k', 
+                    size=self.rcps['font.size']
+                )
+        
+        # reset minor ticks
+        self.ax.set_xticks(np.arange(len(self.list_vals)+1)-0.5, minor=True)
+        self.ax.set_yticks(np.arange(len(self.list_vals)+1)-0.5, minor=True)
+        
+        # set dotted line internal grid
+        self.ax.grid(which='minor', color='k', linestyle='--', linewidth=1)
+        
+        # remove the axis ticks on every side
+        self.ax.tick_params(which='both', bottom=False, left=False, top=False, right=False)
+        
+        # set master title
+        self.fig.suptitle(self.mastertitle, fontsize=self.rcps['axes.titlesize'])
+        
+        # put atlas logo
+        hep.atlas.text(self.logotext, ax=self.ax, loc=0)
+    
+    
+    """
+    -----------------------------------------------------------------------------------------------------
+    Public functions
+    -----------------------------------------------------------------------------------------------------
+    """
+    
+    def figure_options(self, **figkw):
+        
+        super().figure_options(**figkw)
+    
+    
+    def plot_options(self, setcbar=False, decimal=1, rcp_kw={}):
+        
+        self.setcbar = setcbar
+        self.decimal = decimal
+    
+    
+    def color_options(self, colormap=None, reverse=False):
+        
+        self.set_color(colormap, reverse)
+        
+        
+    def create(self, save_name='', dpi=1000):
+        
+        # create plot figure and ax
+        self.create_canvas()
+        self.make_grid()
+        self.ax = self.make_subplot(0, 1, 0, 1)
+        
+        # make plot
+        self.c_matrix()
         
         if save_name:
             self.saveimage(save_name, dpi)
