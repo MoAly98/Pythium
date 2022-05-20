@@ -1,4 +1,4 @@
-# Pythium Plots
+# Pythium Plots (TEMP)
 
 A (quick) thorough walkthrough of how plotting classes work in Pythium. Currently, Jupyter test files that are present in the `plot_misc` file contain plot classes and examples of use cases. The file `plot_classes.py` stores all classes.
 
@@ -17,6 +17,15 @@ Plots are made by creating an instance of the class by calling the constructor a
 This behaviour is universal for all plots, although internally, the way variables are stored/kept track of slightly varies between the two main histogram classes (Hist1D and RatioPlot) and other classes. This is because the histogram classes have been developed further, while other classes were left a bit behind.
 
 `create()` serves the same purpose for all plots but is slightly different for each of them; for this reason it is not included in `EmptyPlot`, but rather defined separately in each class.
+
+### Optional public functions
+
+Sorry, but for now, you will have to deal with the text I already wrote for my report 😛 (it's basically the same section)
+
+![image](https://user-images.githubusercontent.com/91688435/169562993-8de88201-d4a6-4ce8-b21b-5eddd3c6586f.png)
+
+![image](https://user-images.githubusercontent.com/91688435/169563527-1c0672b2-9e10-44ed-83e6-c7eb4eb6298c.png)
+
 
 ### Titling system
 
@@ -93,11 +102,11 @@ The user has access (can add and modify) this dictionary by creating their own a
 
 Explanation of storage variables:
 
-    self.samples: list[str] or str; Names of all samples
-    self.data: list[str] or str; Names of all samples that are going to be plotted as points
+    self.samples: list[str] or str -> Names of all samples
+    self.data: list[str] or str -> Names of all samples that are going to be plotted as points
     self.is_stack: bool
-    self.errors: 'hist', 'data' or 'all'; Which samples will have errrors
-    self.shape: 'hollow' or 'full', defaults to 'full' if self.is_stack = True; Whether to plot hollow histos or filled histos. Hollow ones will have different edgecolors, while full ones will have black edgecolor and colored facecolor
+    self.errors: 'hist', 'data' or 'all' -> Which samples will have errrors
+    self.shape: 'hollow' or 'full', defaults to 'full' if self.is_stack = True -> Whether to plot hollow histos or filled histos. Hollow ones will have different edgecolors, while full ones will have black edgecolor and colored facecolor
 
     1  self.samples_dict = {} # {'samplename': sample}
     2  self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
@@ -150,7 +159,7 @@ This gets called the first time in the constructor, but can be recalled if `colo
 
 ### Plotting methods
 
-The main function `hist_plot()` calls:
+The three most important functions that the main function `hist_plot()` calls are:
 1. `histbins_plotter()`
 
         def histbins_plotter(self, _ax: mpl.axes.Axes, data: list =None) -> None:
@@ -282,3 +291,70 @@ The main function `hist_plot()` calls:
         hep.plot.yscale_text(ax)
 
 Generates ATLAS logo inside plot (for now works only for Hist1D and RatioPlot, others use directly the `hep.atlas.text`). To allow for `hep.plot.yscale_text` (mplhep function that increases $y$ axis to fit any text in the plot) to work properly, since this function only detects `matplotlib.AncoredText` objects, an empty one is created right under the ATLAS logo, then the function is called. The bbox evaluation is to determine the lower right corner of the ATLAS logo generated with `hep.atlas.label`.
+
+## RatioPlot
+
+Inherits from Hist1D so all of the above applies as well. In particular, to make the main subplot, the Hist1D `hist_plot()` function is called, so that's exactly the same. There are still few technicalities regarding the lower subplot (also called bot plot, or `botax`).
+
+### Variables storage
+
+        1. self.reference = reference -> str, i.e. 'samplename' or 'total' (taken from input)
+        2. self.numerators = {} -> {samplename: str, sample: Hist}
+        3. self.denominator = {} -> {samplename: str, sample: Hist}
+        4. self.dvals = [] -> [float]
+
+1. Denotes with respect to which sample the ratio will be calculated. If it's `total`, see below.
+2. Which samples to use as "numerator".
+3. Which sample to use as "denominator".
+4. Raw values to be used as denominator when calculating the ratio values. These can be either taken directly from Hist objects using `Hist.values()`, or calculated using the function `get_stackvalues()` (present in Hist1D) in case `self.reference = 'total'`:
+
+        def get_stackvalues(self, listofhist: list) -> list:
+            """ Get total height values of a list of hist objects (with same edges, binwidths, etc.) """
+
+            if len(listofhist) == 1:
+                return listofhist[0].values()
+
+            else:
+                valueslist = []
+                for h in listofhist:
+                    values = h.values()
+                    valueslist.append(values)
+
+                return np.sum(valueslist, axis=0)
+
+If `self.reference = 'total'`, things are a bit different. This is the case when there is only one data sample and the other histo samples are stacked together. The ratio plot is then the data histogram divided by the total of the stack histograms.
+* `self.numerators` is not a dictionary with multiple samples but now only contains the data sample.
+* `self.dvals` is not just the `Hist.values()` of the denominator sample, but is calculaed from all the stack histograms using `get_stackvalues()` which takes in a list of Hist objects, extracts their values using `.values()` and sums them all up for each bin.
+
+Ratio values are calculated using the funtion `ratiovalues_calculator()` and stored in `self.ratiovalues`:
+
+    def ratiovalues_calculator(self) -> None:
+        """ Calculate and store ratio values of specified samples (numerators) """
+        
+        self.ratiovalues = {}
+        for samplename, sample in self.numerators.items():
+            self.ratiovalues[samplename] = []
+            for n, m in zip(sample.values(), self.dvals):
+                if m != 0:
+                    self.ratiovalues[samplename].append(n/m)
+                else:
+                    self.ratiovalues[samplename].append(0)
+
+### Plotting methods
+
+For the lower subplot, the main function is `bot_plot()`. The following happens:
+
+        # iterate through all samples in self.numerators along with corresponding color
+        for i, samplename in enumerate(self.numerators.keys()):
+            if samplename in self.data or self.data == 'all':
+                self.ratio_scatters(samplename, _clist[i])
+            else:
+                self.ratio_histbins(samplename, _clist[i])
+
+`ratio_scatters()` uses `hep.histplot()`, while `ratio_histbins()` uses `matplotlib.stairs` becaues of an issue with not being able to adject properly the baseline of the histograms (the starting $y$ values of it, which in the lower subplot must be 1).
+
+To plot the error bins (currently only available for histo samples) the function `histbins_errs()` from Hist1D is used.
+
+It is also possible for the user to change the bot plot's y axis range using `ratio_options()`, so that this doesn't happen:
+
+![image](https://user-images.githubusercontent.com/91688435/169562440-973f9994-e713-4671-a332-ebb3b9e75531.png)
