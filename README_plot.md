@@ -290,7 +290,7 @@ The three most important functions that the main function `hist_plot()` calls ar
         ax.scatter(0, 0, visible=False)
         hep.plot.yscale_text(ax)
 
-Generates ATLAS logo inside plot (for now works only for Hist1D and RatioPlot, others use directly the `hep.atlas.text`). To allow for `hep.plot.yscale_text` (mplhep function that increases $y$ axis to fit any text in the plot) to work properly, since this function only detects `matplotlib.AncoredText` objects, an empty one is created right under the ATLAS logo, then the function is called. The bbox evaluation is to determine the lower right corner of the ATLAS logo generated with `hep.atlas.label`.
+Generates ATLAS logo inside plot (for now works only for Hist1D and RatioPlot, others use directly the `hep.atlas.text`). To allow for `hep.plot.yscale_text` to work properly I had to find a sketchy solution. This is a mplhep function that increases $y$ axis to fit any text in the plot, but only detects `matplotlib.AnchoredText` objects and the ATLAS logo is a `matplotlib.Text` object (which is a completely different thing!). So to make sure the logo doesn't overlap with the plotted elements, an empty AnchoredText is created right under it, and after that the mplhep function is called. The bbox evaluation is to determine the lower right corner of the ATLAS logo generated with `hep.atlas.label`.
 
 ## RatioPlot
 
