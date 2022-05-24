@@ -8,16 +8,22 @@ import pandas as pd
 import numpy as np
 import logging
 import pickle
+<<<<<<< HEAD
 
 from matplotlib import transforms
 from math import ceil
+=======
+from typing import Tuple
+from matplotlib.offsetbox import AnchoredText
+#from numba import jit, njit
+>>>>>>> jkwinter_fb_temp
 
 
 
 class EmptyPlot(object):
     
     
-    def __init__(self, title="", layout=(1,1), size=(6.4,4.8), style='ATLAS', directory='') -> None:
+    def __init__(self, title="", layout=(1,1), size=(6.4,4.8), style='ATLAS', directory='', logotext='Internal') -> None:
         
         self.mastertitle = title
         self.layout      = layout
@@ -64,6 +70,10 @@ class EmptyPlot(object):
         The space between the subplots is called 'spacing' throughout all classes
         """
         
+        # dictionary of marker styles from matplotlib
+        # -> https://matplotlib.org/3.5.1/api/_as_gen/matplotlib.markers.MarkerStyle.html#matplotlib.markers.MarkerStyle.markers
+        self.markerstyles = mpl.markers.MarkerStyle.markers
+
         # common rcParams to all (or most) plot types
         self.rcps = {
             'xaxis.labellocation' : 'right', # location of x label w.r.t. x axis
@@ -72,27 +82,16 @@ class EmptyPlot(object):
             'axes.titlesize'      : 20, # master title font size
             'font.size'           : 10, # x, y label AND ticks label AND legend font size
             'lines.linewidth'     : 1,
-            'lines.marker'        : '.', # marker style
+            'lines.marker'        : list(mpl.markers.MarkerStyle.filled_markers), # marker style FIXME: cannot pass a list here. breaks in make_subplot.
             'lines.markersize'    : 8,
         }
-        
-        # dictionary of marker styles from matplotlib
-        # -> https://matplotlib.org/3.5.1/api/_as_gen/matplotlib.markers.MarkerStyle.html#matplotlib.markers.MarkerStyle.markers
-        self.markerstyles = mpl.markers.MarkerStyle.markers
-        
+
         # default font sizes
         self.mastersize = self.rcps['axes.titlesize'] # figure title font size
         self.fontsize = 15 # axis label font size
         
         # default text to diaplay near atlas logo
-        self.logotext = "Internal"
-    
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Private functions
-    -----------------------------------------------------------------------------------------------------
-    """    
+        self.logotext = logotext
     
     def create_canvas(self) -> None:
         """ Create figure and set the hep style (rcParams) """
@@ -142,13 +141,15 @@ class EmptyPlot(object):
             self.user_cmap = self.user_cmap + '_r'
         mpl.rcParams['image.cmap'] = self.user_cmap
     
-    
+
     def config_rcParams(self, settings_dict: dict) -> None:
         """ Let user update global rcParams values of matplotlib """
-        
         if isinstance(settings_dict, dict):
             for key, value in settings_dict.items():
+                #PATCHED: skip if lines.marker is a list
+                if key == 'lines.marker' and isinstance(value, list): continue
                 mpl.rcParams[key] = value
+
         else:
             print(f"Put a dictionary as argument for {__name__} function") # need logging
         
@@ -168,6 +169,11 @@ class EmptyPlot(object):
                 is_type = True
             else:
                 logging.error(f"All elements in list must be {_type} objects")
+        elif isinstance(obj, dict):
+            if all(isinstance(x, _type) for k, x in obj.items()):
+                is_type = True
+            else:
+                logging.error(f"All values in dict must be {_type} objects")
         elif isinstance(obj, _type):
             is_type = True
         else:
@@ -194,13 +200,6 @@ class EmptyPlot(object):
             self.gridline = string[4:]
         else:
             logging.error("Invalid grid string argument. Please enter 'axis'+'linestyle' string, e.g. 'y:' or 'x--'")
-    
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Public functions
-    -----------------------------------------------------------------------------------------------------
-    """ 
     
     
     def set_axislabels(self, fontsize: float =None, **labels_kw) -> None:
@@ -244,7 +243,7 @@ class EmptyPlot(object):
         
         self.fig.savefig(name, facecolor='white', transparent=False, dpi=dpi, bbox_inches='tight')
 
-        
+    #FIXME
     def show_content(self):
         """ Print out data content of histogram and returns pandas dataframe """
         
@@ -257,30 +256,29 @@ class EmptyPlot(object):
         else:
             pass
 
-
-
-
+#FIXME: This is not a 1D histogram class. It is a canvas class for plots of 1D histograms
 class Hist1D(EmptyPlot):
     
     
-    def __init__(self, samples=[], data=[], errors: str =None, stack=False, **kwargs) -> None:
+    def __init__(self, observable: str, samples=[], data=[], labels={}, errors: str =None, stack=False, **kwargs) -> None:
         
         super().__init__(**kwargs)
         
         # set histogram plot specific rcParams
-        self.hist_rcps = {
+        self.rcps.update({
             'legend.handletextpad': 0.3, # space between the legend handle and text
             'legend.columnspacing': 0.5,
             'legend.labelspacing' : 0.1, # vertical space between the legend entries
             'legend.markerscale'  : 1.1,
-        }
-        self.rcps.update(self.hist_rcps)
-        # self.config_rcParams(self.rcps) # i think this doesnt work
-        
+        })
+
+        # self.config_rcParams(self.rcps) # FIXME: i think this doesnt work
+        self.obs      = observable
         self.samples  = samples
         self.data     = data
         self.is_stack = stack
         self.errors   = errors
+        self.leglabels= labels
 
         self.samples_dict = {} # {'samplename': sample}
         self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
@@ -302,77 +300,77 @@ class Hist1D(EmptyPlot):
         
         # list of basic 10 colors the class will automatically use (if number of plotted elements is less than 10)
         # (chosen from: https://matplotlib.org/stable/gallery/color/named_colors.html)
-        self.color_order = [
-            'black', 'red', 'blue', 'limegreen', 'orangered', 'magenta', 'yellow', 'aqua', 'chocolate', 'darkviolet'
+        self.color_order = [ 
+            'red', 'blue', 'limegreen', 'orangered', 'magenta', 'yellow', 'aqua', 'chocolate', 'darkviolet','darkgreen'
         ]
         self.assign_colors()
         
         self.store_data()
     
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Private functions
-    -----------------------------------------------------------------------------------------------------
-    """
-    
+    #TODO: Move to parent class and override. Check dimension of histogram object
+    #TODO: Move to config file parser
     def check_input(self) -> None:
         
-        if self.samples:
-            
-            if self.type_checker(self.samples, str):
-                
-                if self.data and self.type_checker(self.data, str):
-                    if self.data != 'all':
-                        if not isinstance(self.data, list):
-                            self.data = [self.data]
-
-                        # check if given data (scatter) names are present in samples
-                        for samplename in self.data:
-                            if samplename not in self.samples:
-                                logging.error(f"There is no variable named {samplename} in 'samples'")
-
-                if not isinstance(self.samples, list):
-                    self.samples = [self.samples]
-                    
-                for samplename in self.samples:
-                    try:
-                        with open(self.dir + f"{samplename}.pkl", 'rb') as file:
-                            obj = pickle.load(file)
-
-                            # check whether input is bh
-                            if isinstance(obj, bh.Histogram):
-                                self.is_obj_bh = True
-                            else:
-                                logging.error(f"The file {samplename}.pkl does not contain a hist object")
-                                break
-
-                            # here, assuming each file contains only one bh
-                            self.samples_dict[samplename] = obj
-                            if samplename in self.data or self.data == 'all':
-                                self.data_dict[samplename] = obj
-                                self.plot_types[samplename] = 'data'
-                            else:
-                                self.histos_dict[samplename] = obj
-                                self.histos_list.append(obj)
-                                self.plot_types[samplename] = 'histo'
-                    except:
-                        logging.error(f"There is no file named {samplename}.pkl containing a hist object")
-                        break
-            else:
-                logging.error("Sample entry must be strings")
-        else:
+        if not self.samples:
             logging.error("Enter a non-empty list of samples to plot.")
+
+        if not self.type_checker(self.samples, str):
+            logging.error("Sample entry must be strings")
+
+        if self.data and self.type_checker(self.data, str):
+            if self.data != 'all':
+                if not isinstance(self.data, list):
+                    self.data = [self.data]
+                    
+                # check if given data (scatter) names are present in samples
+                for samplename in self.data:
+                    if samplename not in self.samples:
+                        logging.error(f"There is no variable named {samplename} in 'samples'")
+
+        if not isinstance(self.samples, list):
+            self.samples = [self.samples]
     
-    
+        obj = None
+        try:
+            with open(self.dir + f"{self.obs}_file.pkl", 'rb') as file:
+                print('Reading from file: '+file.name)
+                obj = pickle.load(file)
+        except:
+            logging.error(f"There is no file named {self.dir}{self.obs}_file.pkl")
+        
+        if obj is None:
+            logging.error(f"Could not load dictionary from {self.dir}{self.obs}_file.pkl")
+
+        if not self.type_checker(obj, bh.Histogram):
+            logging.error(f"The file {self.dir}{self.obs}.pkl does not contain a dict of hist objects")
+
+        if not all(sname in obj for sname in self.samples):
+            logging.error(f"A sample is not in the file {self.dir}{self.obs}_file.pkl")                
+
+        #TODO: move to separate function
+        self.samples_dict = obj
+        for samplename in self.samples:
+            #self.samples_dict[samplename] = obj[samplename]
+            if samplename in self.data or self.data == 'all':
+                self.data_dict[samplename] = obj[samplename]
+                self.plot_types[samplename] = 'data'            #FIXME: redundant? Not used
+            else:
+                self.histos_dict[samplename] = obj[samplename]
+                self.histos_list.append(obj[samplename])        #FIXME: redundant? Not used
+                self.plot_types[samplename] = 'histo'           #FIXME: redundant? Not used
+
+
     def store_data(self) -> None:
         
         # right now, this assumes all samples have same dim and length (should check for this)
         # thus, take the first sample to retrieve general info
-        if self.histos_dict:
-            first_sample = self.histos_dict[next(iter(self.histos_dict))]
-        else:
-            first_sample = self.data_dict[next(iter(self.data_dict))]
+        #if self.histos_dict:
+        #    first_sample = self.histos_dict[next(iter(self.histos_dict))]
+        #else:
+        #    first_sample = self.data_dict[next(iter(self.data_dict))]
+        if not self.samples_dict:
+            logging.error(f"Missing samples dictionary.")
+        first_sample = self.samples_dict[next(iter(self.samples_dict))]
         self.datasize, = first_sample.axes.size
         self.edges = list(first_sample.axes[0].edges)
         self.values = [list(x.values()) for x in self.samples_dict.values()]
@@ -388,16 +386,21 @@ class Hist1D(EmptyPlot):
             else:
                 self.histolabels.append(label)
 
-
     def set_explabel(self, ax: mpl.axes.Axes, data=True, lumi=139) -> None:
         """ Set experimental label inside plot and scale y axis automatically to avoid collision with plot elements """
         
         # generate text
+        #TODO: Why does this take so long? ~1.8s using mplhep
+        #See issue here https://github.com/scikit-hep/mplhep/issues/338
+        #See open discussion here https://github.com/scikit-hep/mplhep/discussions/382
+        #See source code https://github.com/scikit-hep/mplhep/blob/master/src/mplhep/label.py
         if self.style == 'ATLAS':
             text = hep.atlas.label(ax=ax, label=self.logotext, data=data, lumi=lumi)
         elif self.style == 'LHCb1' or self.style == 'LHCb2':
             text = hep.lhcb.label(ax=ax, label=self.logotext, data=data, lumi=lumi)
-        
+        #print(text)
+        #text = ax.text(0.05,0.95,'ATLAS')
+
         # evaluate all bbox edges of the text
         xarray = []
         yarray = []
@@ -425,7 +428,6 @@ class Hist1D(EmptyPlot):
         """
         
         # create and put invisible AnchoredText object
-        from matplotlib.offsetbox import AnchoredText
         anch_text = AnchoredText(
             "", 
             loc='lower left', 
@@ -444,32 +446,47 @@ class Hist1D(EmptyPlot):
         hep.plot.yscale_text(ax)
     
     
+<<<<<<< HEAD
     def assign_colors(self, custom: list = None) -> None:
+=======
+    def assign_colors(self, custom: list =None, d : dict = None) -> None:
+>>>>>>> jkwinter_fb_temp
         """ Fills colors_dict accordingly """
         
-        for i, samplename in enumerate(self.samples_dict.keys()):
+        #for i, samplename in enumerate(self.samples_dict.keys()):
+        samplelist = self.samples
+        if d: samplelist = list(d.keys())
+
+        for i, samplename in enumerate(samplelist):
             if custom:
                 self.colors_dict[samplename] = custom[i]
             else:
-                if len(self.samples) > 10 or self.is_stack:
-                    cmaplist = self.colorlist_gen(len(self.samples))
+                if samplename in list(self.data_dict.keys()):
+                    cmaplist = self.colorlist_gen(len(samplelist),'Greys',True,100,50)
+                    self.colors_dict[samplename] = cmaplist[i]
+                elif len(samplelist) > 10 or self.is_stack:
+                    cmaplist = self.colorlist_gen(len(samplelist))
                     self.colors_dict[samplename] = cmaplist[i]
                 else:
                     self.colors_dict[samplename] = self.color_order[i]
+        
+
     
-    
-    def get_samples_colors(self, d: dict) -> (list, list):
+    def get_samples_colors_labels(self, d: dict) -> Tuple[list, list, list]:
         """ Retrive the list of samples and the list of colors from dictionary of the form 'samplename: sample' """
         
         samples = list(d.values())
         colors = []
-        for samplename in d.keys():
+        labels = []
+        for samplename in list(d.keys()):
             colors.append(self.colors_dict[samplename])
+            labels.append(self.leglabels[samplename])
         
-        if len(colors) == 1:
-            return samples, colors[0]
-        else:
-            return samples, colors
+        return samples, colors, labels
+        #if len(colors) == 1:
+        #    return samples, colors[0]
+        #else:
+        #    return samples, colors
     
     
     def get_stackvalues(self, listofhist: list) -> list:
@@ -490,9 +507,7 @@ class Hist1D(EmptyPlot):
     def histbins_errs(self, ax: mpl.axes.Axes, ratio=False) -> None:
         """ Creates error bins on histbins using ax.bar """
         
-        histlist, _clist = self.get_samples_colors(self.histos_dict)
-        if type(_clist) != list:
-            _clist = [_clist]
+        histlist, _clist, ___ = self.get_samples_colors_labels(self.histos_dict)
         
         # all hists have same bin edges and thus same bin centers and widths
         _centers, = histlist[0].axes.centers
@@ -546,14 +561,14 @@ class Hist1D(EmptyPlot):
                     edgecolor=_clist[i],
                     alpha=0.5,
                     hatch='/////',
-                    label= 'Uncertainty' if _clist[i] == 'black' else None
+                    label= 'Uncertainty' if _clist[i] == 'black' else None #FIXME: Why?
                 )
         
     
     def scatterdata_plotter(self, _ax: mpl.axes.Axes, data: list =None) -> None:
         """ Main function to plot scatter data points """
         
-        H, _clist = self.get_samples_colors(self.data_dict)
+        H, _clist, _llist = self.get_samples_colors_labels(self.data_dict)
         if data:
             H = data
             _bins = self.edges
@@ -574,16 +589,16 @@ class Hist1D(EmptyPlot):
             yerr=_yerr, 
             histtype='errorbar',
             color=_clist,
-            marker=self.rcps['lines.marker'],
+            marker=self.rcps['lines.marker'][:len(H)],
             markersize=self.rcps['lines.markersize'],
-            label=self.scatterlabels
+            label=_llist
         )
     
     
     def histbins_plotter(self, _ax: mpl.axes.Axes, data: list =None) -> None:
         """ Main functin to plot histogram bins """
         
-        H, _clist = self.get_samples_colors(self.histos_dict)
+        H, _clist, _llist = self.get_samples_colors_labels(self.histos_dict)
         if data:
             H = data
             _bins = self.edges
@@ -599,7 +614,7 @@ class Hist1D(EmptyPlot):
                 yerr=False,
                 color=_clist,
                 linewidth=self.rcps['lines.linewidth'],
-                label=self.histolabels
+                label=_llist
             )
         
         elif self.shape == 'full':            
@@ -619,7 +634,7 @@ class Hist1D(EmptyPlot):
         
     def hist_plot(self, ax: mpl.axes.Axes) -> None:
         """ Main plot function """
-
+        
         if self.histos_dict:
             self.histbins_plotter(ax)
         
@@ -647,7 +662,7 @@ class Hist1D(EmptyPlot):
         self.set_explabel(ax)
                 
         # scale ylim automatically for optimal legend placement
-        hep.plot.yscale_legend(ax) # gives error if ATLAS label is not plotted yet (idk why)
+        #hep.plot.yscale_legend(ax) # gives error if ATLAS label is not plotted yet (idk why)
         
         # set master title
         ax.set_title(self.mastertitle, fontsize=self.mastersize)
@@ -674,11 +689,11 @@ class Hist1D(EmptyPlot):
         hep.sort_legend(ax)
 
         
-    def colorlist_gen(self, n: int, colormap='gist_rainbow', reverse=False) -> list:
+    def colorlist_gen(self, n: int, colormap='gist_rainbow', reverse=False, max=98, min=2) -> list:
         """ Create custom color list of length n from a given colormap """
         
         clist = []
-        pct_max, pct_min = 98, 2 # max and min percentile of color ramp
+        pct_max, pct_min = max, min # max and min percentile of color ramp
         cmap = mpl.cm.get_cmap(colormap)
         
         # list of values between 0.00 and 1.00; length equals length of data source
@@ -695,13 +710,6 @@ class Hist1D(EmptyPlot):
         
         return clist
         
-
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Public functions
-    -----------------------------------------------------------------------------------------------------
-    """ 
     
     def plot_options(
         self, 
@@ -733,8 +741,9 @@ class Hist1D(EmptyPlot):
         self.config_rcParams(self.rcps)
         
         # set marker style and marker size if passed
+        # must be done manually to bypass mpl.rcParams (cannot interpret string) 
         if marker:
-            if marker in self.markerstyles.keys():
+            if all(m in self.markerstyles.keys() for m in marker):
                 self.rcps['lines.marker'] = marker
         if markersize:
             self.rcps['lines.markersize'] = markersize
@@ -752,18 +761,19 @@ class Hist1D(EmptyPlot):
     def color_options(self, colors=[], colormap='', reverse=False) -> None:
         """ Allow user to enter custom colors for histos and data plots """
 
+        self.assign_colors(None, self.data_dict)
         if colors and self.type_checker(colors, str):
 
             if not isinstance(colors, list):
                 colors = [colors]
-            if len(colors) != len(self.samples):
+            if len(colors) != len(self.histos_dict.keys()):
                 logging.error("Length mismatch between color list and total samples list")
             else:
-                self.assign_colors(colors)
+                self.assign_colors(colors, self.histos_dict)
                     
         elif colormap and self.type_checker(colormap, str):
             if colormap in plt.colormaps():
-                self.assign_colors(self.colorlist_gen(len(self.samples), colormap, reverse))
+                self.assign_colors(self.colorlist_gen(len(self.samples), colormap, reverse),self.histos_dict)
             else:
                 logging.error("Invalid matplotlib colormap; choose from https://matplotlib.org/stable/gallery/color/colormap_reference.html")
         
@@ -774,6 +784,7 @@ class Hist1D(EmptyPlot):
         self.create_canvas()
         self.make_grid()
         self.ax = self.make_subplot(0, 1, 0, 1)
+        #print(self.ax)
         
         # make plot
         self.hist_plot(self.ax)
