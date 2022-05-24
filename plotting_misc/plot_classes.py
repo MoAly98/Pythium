@@ -8,15 +8,11 @@ import pandas as pd
 import numpy as np
 import logging
 import pickle
-<<<<<<< HEAD
-
-from matplotlib import transforms
-from math import ceil
-=======
 from typing import Tuple
 from matplotlib.offsetbox import AnchoredText
 #from numba import jit, njit
->>>>>>> jkwinter_fb_temp
+from matplotlib import transforms
+from math import ceil
 
 
 
@@ -446,11 +442,7 @@ class Hist1D(EmptyPlot):
         hep.plot.yscale_text(ax)
     
     
-<<<<<<< HEAD
-    def assign_colors(self, custom: list = None) -> None:
-=======
     def assign_colors(self, custom: list =None, d : dict = None) -> None:
->>>>>>> jkwinter_fb_temp
         """ Fills colors_dict accordingly """
         
         #for i, samplename in enumerate(self.samples_dict.keys()):
@@ -819,12 +811,6 @@ class RatioPlot(Hist1D):
         # bool if user put a custom y limits for bot plot
         self.custom_ylims = False
         
-        
-    """
-    -----------------------------------------------------------------------------------------------------
-    Private functions
-    -----------------------------------------------------------------------------------------------------
-    """ 
     
     def check_reference(self) -> None:
         
@@ -872,7 +858,7 @@ class RatioPlot(Hist1D):
             yerr=False, 
             histtype='errorbar',
             color=color,
-            marker=self.rcps['lines.marker'],
+            marker=self.rcps['lines.marker'][:len(self.ratiovalues[samplename])],
             markersize=self.rcps['lines.markersize'],
         )
         
@@ -960,7 +946,7 @@ class RatioPlot(Hist1D):
     
     def bot_plot(self) -> None:
                     
-        _notused, _clist = self.get_samples_colors(self.numerators)
+        ___, _clist = self.get_samples_colors(self.numerators)
         if type(_clist) != list:
             _clist = [_clist]
 
@@ -1010,13 +996,6 @@ class RatioPlot(Hist1D):
         # ratio plot
         self.bot_plot()
 
-        
-    """
-    -----------------------------------------------------------------------------------------------------
-    Public functions
-    -----------------------------------------------------------------------------------------------------
-    """ 
-
     
     def ratio_options(self, ylims=[], step: float = None, edges=False) -> None:
         
@@ -1045,9 +1024,7 @@ class RatioPlot(Hist1D):
         
         if save_name:
             self.saveimage(save_name, dpi)
-
-            
-            
+      
             
 class PullPlot(EmptyPlot):
 
@@ -1075,12 +1052,6 @@ class PullPlot(EmptyPlot):
             'elinewidth': 1
         }
     
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Private functions
-    -----------------------------------------------------------------------------------------------------
-    """
 
     def set_figsize(self):
         """ Variable figure length based on number of data points """
@@ -1102,7 +1073,7 @@ class PullPlot(EmptyPlot):
         self.center = self.values[0]
     
     
-    """ CURRENTLY NOT USED """
+    #FIXME: CURRENTLY NOT USED
     def generate_cells(self):
         """ Function used when there is more than one entry per bin """
         
@@ -1198,12 +1169,6 @@ class PullPlot(EmptyPlot):
         # display atlas logo
         hep.atlas.text(self.logotext, ax=self.ax, loc=0)
 
-        
-    """
-    -----------------------------------------------------------------------------------------------------
-    Public functions
-    -----------------------------------------------------------------------------------------------------
-    """ 
     
     def figure_options(self, labelside=None, **figkw):
         
@@ -1261,9 +1226,7 @@ class PullPlot(EmptyPlot):
         
         if save_name:
             self.saveimage(save_name, dpi)
-
-            
-            
+      
             
 class ProjectionPlot(EmptyPlot):
     
@@ -1281,12 +1244,6 @@ class ProjectionPlot(EmptyPlot):
         
         self.store_data(self.hist)
     
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Private functions
-    -----------------------------------------------------------------------------------------------------
-    """
         
     def store_data(self, obj):
         """ Retrieve x and y data from obj """
@@ -1399,12 +1356,6 @@ class ProjectionPlot(EmptyPlot):
         self.v_ax.tick_params(**self.vax_kw)
 
     
-    """
-    -----------------------------------------------------------------------------------------------------
-    Public functions
-    -----------------------------------------------------------------------------------------------------
-    """ 
-    
     def figure_options(self, spacing=None, stretch=None, **figkw):
         
         super().figure_options(**figkw)
@@ -1454,8 +1405,6 @@ class ProjectionPlot(EmptyPlot):
             self.saveimage(save_name, dpi)
             
             
-            
-            
 class CMatrixPlot(EmptyPlot):
     
     
@@ -1480,16 +1429,10 @@ class CMatrixPlot(EmptyPlot):
         self.decimal = 1
     
     
-    """
-    -----------------------------------------------------------------------------------------------------
-    Private functions
-    -----------------------------------------------------------------------------------------------------
-    """    
-    
     def cut_data(self, threshold):
         """ Filter correlation data based on numerical threshold """
         """ 
-        NOTE: currently, if any data is lower than threshold, entire row/column
+        FIXME: currently, if any data is lower than threshold, entire row/column
               gets cut, need adjustments
         """
         
@@ -1565,12 +1508,6 @@ class CMatrixPlot(EmptyPlot):
         # put atlas logo
         hep.atlas.text(self.logotext, ax=self.ax, loc=0)
     
-    
-    """
-    -----------------------------------------------------------------------------------------------------
-    Public functions
-    -----------------------------------------------------------------------------------------------------
-    """
     
     def figure_options(self, **figkw):
         
