@@ -76,7 +76,7 @@ class EmptyPlot(object):
             'axes.titlesize'      : 20, # master title font size
             'font.size'           : 10, # x, y label AND ticks label AND legend font size
             'lines.linewidth'     : 1,
-            'lines.marker'        : '.', # marker style FIXME: cannot pass a list here. breaks in make_subplot.
+            'lines.marker'        : list(mpl.markers.MarkerStyle.filled_markers), # marker style FIXME: cannot pass a list here. breaks in make_subplot.
             'lines.markersize'    : 8,
         }
 
@@ -138,9 +138,10 @@ class EmptyPlot(object):
 
     def config_rcParams(self, settings_dict: dict) -> None:
         """ Let user update global rcParams values of matplotlib """
-        
         if isinstance(settings_dict, dict):
             for key, value in settings_dict.items():
+                #PATCHED: skip if lines.marker is a list
+                if key == 'lines.marker' and isinstance(value, list): continue
                 mpl.rcParams[key] = value
 
         else:
@@ -265,7 +266,7 @@ class Hist1D(EmptyPlot):
             'legend.markerscale'  : 1.1,
         })
 
-        # self.config_rcParams(self.rcps) # i think this doesnt work
+        # self.config_rcParams(self.rcps) # FIXME: i think this doesnt work
         self.obs      = observable
         self.samples  = samples
         self.data     = data
@@ -577,7 +578,7 @@ class Hist1D(EmptyPlot):
             yerr=_yerr, 
             histtype='errorbar',
             color=_clist,
-            marker=self.rcps['lines.marker'],
+            marker=self.rcps['lines.marker'][:len(H)],
             markersize=self.rcps['lines.markersize'],
             label=_llist
         )
@@ -721,6 +722,7 @@ class Hist1D(EmptyPlot):
         self.config_rcParams(self.rcps)
         
         # set marker style and marker size if passed
+        # must be done manually to bypass mpl.rcParams (cannot interpret string) 
         if marker:
             if all(m in self.markerstyles.keys() for m in marker):
                 self.rcps['lines.marker'] = marker
