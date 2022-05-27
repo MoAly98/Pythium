@@ -78,7 +78,7 @@ class EmptyPlot(object):
             'axes.titlesize'      : 20, # master title font size
             'font.size'           : 10, # x, y label AND ticks label AND legend font size
             'lines.linewidth'     : 1,
-            'lines.marker'        : list(mpl.markers.MarkerStyle.filled_markers), # marker style FIXME: cannot pass a list here. breaks in make_subplot.
+            'lines.marker'        : list(mpl.markers.MarkerStyle.filled_markers),
             'lines.markersize'    : 8,
         }
 
@@ -235,7 +235,7 @@ class EmptyPlot(object):
             setattr(self, key, val)
  
     
-    def saveimage(self, name: str, dpi: int) -> None:
+    def saveimage(self, name: str, dpi: int=None) -> None:
         
         self.fig.savefig(name, facecolor='white', transparent=False, dpi=dpi, bbox_inches='tight')
 
@@ -268,7 +268,7 @@ class Hist1D(EmptyPlot):
             'legend.markerscale'  : 1.1,
         })
 
-        # self.config_rcParams(self.rcps) # FIXME: i think this doesnt work
+        self.config_rcParams(self.rcps)
         self.obs      = observable
         self.samples  = samples
         self.data     = data
@@ -352,7 +352,7 @@ class Hist1D(EmptyPlot):
                 self.plot_types[samplename] = 'data'            #FIXME: redundant? Not used
             else:
                 self.histos_dict[samplename] = obj[samplename]
-                self.histos_list.append(obj[samplename])        #FIXME: redundant? Not used
+                self.histos_list.append(obj[samplename])        #FIXME: redundant? Used in ratio plot, but can use histos_dict.items to the same end
                 self.plot_types[samplename] = 'histo'           #FIXME: redundant? Not used
 
 
@@ -395,7 +395,7 @@ class Hist1D(EmptyPlot):
         elif self.style == 'LHCb1' or self.style == 'LHCb2':
             text = hep.lhcb.label(ax=ax, label=self.logotext, data=data, lumi=lumi)
         #print(text)
-        #text = ax.text(0.05,0.95,'ATLAS')
+        #text = ax.text(0.05,0.1,'ATLAS')
 
         # evaluate all bbox edges of the text
         xarray = []
@@ -449,13 +449,16 @@ class Hist1D(EmptyPlot):
         samplelist = self.samples
         if d: samplelist = list(d.keys())
 
+        j = 0
+        ndata = len(self.data_dict.keys())
         for i, samplename in enumerate(samplelist):
             if custom:
                 self.colors_dict[samplename] = custom[i]
             else:
                 if samplename in list(self.data_dict.keys()):
-                    cmaplist = self.colorlist_gen(len(samplelist),'Greys',True,100,50)
-                    self.colors_dict[samplename] = cmaplist[i]
+                    cmaplist = self.colorlist_gen(ndata,'Greys',True,100,100-10*ndata)
+                    self.colors_dict[samplename] = cmaplist[j]
+                    j+=1
                 elif len(samplelist) > 10 or self.is_stack:
                     cmaplist = self.colorlist_gen(len(samplelist))
                     self.colors_dict[samplename] = cmaplist[i]
