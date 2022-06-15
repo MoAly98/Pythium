@@ -2,6 +2,7 @@
 author: Mohamed Aly (maly@cern.ch)
 Brief: Functions to set up file paths and read sample data into awkward arrays using uproot methods
 '''
+from functools import lru_cache
 #=========== File Reading Imports
 import uproot4 as uproot
 from pathlib import Path
@@ -15,10 +16,11 @@ import time
 import psutil
 import gc
 #============ thbbanalysis Imports
-from utils.common.branches import *
-from utils.common.tools import combine_list_of_dicts
-import utils.sklimming as sklim
-from utils.common import tools
+from thbbanalysis.common.branches import *
+from thbbanalysis.common.tools import combine_list_of_dicts
+#import thbbanalysis.sklimming as sklim
+from thbbanalysis.sklimming import writer
+from thbbanalysis.common import tools
 
 
 
@@ -53,6 +55,7 @@ def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
     dirpaths = [p+'/*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
     fpaths = list(set([path  for path in paths for p in glob.glob(path) if not os.path.isdir(p) ]))
     paths = dirpaths+fpaths
+
     return paths
 
 
@@ -73,6 +76,7 @@ def process_sample(sample: "Sample", cfg: CfgType)->Dict[str, "ak.Array"]:
     trees_to_status_to_branches = {tree:{} for tree in sample.branches}
     tree_to_branch_write_names = {tree: [branch.write_name for branch in branch_list] for tree, branch_list in sample.branches.items()}
     paths = make_sample_path(locs, tags)
+    if len(paths) == 0: raise FileNotFoundError(f"No Files Found in directories: {locs} with tags: {tags}")
     for tree, branch_list in sample.branches.items():
         branch_write_names = tree_to_branch_write_names[tree]
         on_branch_names = [branch.alg for branch in branch_list if branch.branch_type == 'on']
@@ -99,68 +103,88 @@ def process_sample(sample: "Sample", cfg: CfgType)->Dict[str, "ak.Array"]:
             req_branches = [arg for arg in args if isinstance(arg, str) and arg not in branch_write_names]
             trees_to_status_to_branches[tree]['req'] += req_branches
     
-    run_workflow(paths, trees_to_branch_names, sample, cfg, trees_to_status_to_branches)
-
+    sample_yield = run_workflow(paths, trees_to_branch_names, sample, cfg, trees_to_status_to_branches)
+    
+    outdir = cfg["settings"]["outdir"]
+    with open(f"{outdir}/Yields.csv", "a+") as yf:
+        yf.write(f"{sample.name},{sample_yield}\n")
+    
 
 def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample: "Sample", cfg: CfgType, trees_to_status_to_branches: BranchStatusType)->Dict[str,"ak.Array"]:
-        '''
-        Method responsible for running the pre-processing workflow, starting from file reading, 
-        followed by manipulating input then writing out data. The workflow cycle is done on chunks of files
-        Args:
-            paths: the list of paths to look for sample
-            trees_to_branch_names: A map from tree names to branches to be extracted from tree
-            sample: The Sample object being procssed 
-            cfg: A dictionary carrying all settings specified in config file
-            trees_to_status_to_branches: Map for each sample from tree to various status 
-                                of branches to branches that match that status.
-                                Status can be on, off, new, req, tmp.
-        Return:
-            None 
-        '''
-        skip_missing_files = cfg['settings']['skipmissingfiles']
-        if len(paths)==0:
-            logger.error("Input paths not found..")
-        for path in paths:
-            logger.info(f'Processing data from the following path: \n {path}')
-            files = glob.glob(path) # Get list of files matching path regex
-            if len(files) == 0:
-                logger.warning(f"No files were found in {path}, skipping")
-                continue 
-            try:
-                # split files into list(list) where inner list of files total size < 4GB
-                data_chunks = chunk_files(files) 
-                # int to keep track of how many chunks were processed smoothly
-                done=0
-                # Loop over groups of 4GBs file sets
-                for chunk_index, chunk in enumerate(data_chunks):
-                    logger.info(f"Reading data from with uproot for chunk {chunk_index+1}/{len(data_chunks)}")
-                    exception = 0
-                    # While there are still exceptions in reading the file, remove file causing exception and re-read
-                    while exception is not None:
-                        chunk_data, exception = read(chunk, trees_to_branch_names)
-                        # If all files were read succesfully break before code tries to find errors
-                        if exception is None:   break
-                        broken_file = handle_exception(exception, skip_missing_files) 
-                        # if exception handled remove file with missing key
-                        chunk.remove(broken_file)
-                        # re-read rest of files. If exception is still not None, while loop starts over to remove next file
-                        chunk_data, exception = read(chunk,trees_to_branch_names)
-                    logger.info(f"Manipulating chunk data")
-                    chunk_data = finalize(chunk_data,  sample, trees_to_status_to_branches)
-                    if len(chunk_data)!=0:
-                        logger.info(f"Writing chunk data")
-                        sklim.writer.write_sample(chunk_data, sample, cfg , suffix='_chunk'+str(chunk_index))
-                        done += 1
-                        # Clean up memory
-                        del chunk_data
-                        gc.collect()
-                    else:
-                        logger.warning(f"No data from chunk, not written out")
-                if done == 0:
-                    logger.error(f"No data saved from any chunks. Are you cutting too harshly?")
-            # If some other error was found which is not caught by the process() function, display it and break
-            except Exception as not_uproot_except:
-                raise not_uproot_except
+    '''
+    Method responsible for running the pre-processing workflow, starting from file reading, 
+    followed by manipulating input then writing out data. The workflow cycle is done on chunks of files
+    Args:
+        paths: the list of paths to look for sample
+        trees_to_branch_names: A map from tree names to branches to be extracted from tree
+        sample: The Sample object being procssed 
+        cfg: A dictionary carrying all settings specified in config file
+        trees_to_status_to_branches: Map for each sample from tree to various status 
+                            of branches to branches that match that status.
+                            Status can be on, off, new, req, tmp.
+    Return:
+        None 
+    '''
+    skip_missing_files = cfg['settings']['skipmissingfiles']
+    skip_missing_sample = cfg['settings']['skipmissingsamples']
+    yields = cfg['settings']['yields']
+    tag = sample.tag
+    
+    sample_yield = 0
+    out_idx = 0
+
+    for path in paths:
+        logger.info(f'Processing data from the following path: \n {path}')
+        files = glob.glob(path) # Get list of files matching path regex
+        if len(files) == 0:
+            logger.warning(f"No files were found in {path}, skipping")
+            continue 
+        try:
+            # split files into list(list) where inner list of files total size < 4GB
+            data_chunks = chunk_files(files)
+            # int to keep track of how many chunks were processed smoothly
+            done=0
+            # Loop over groups of 4GBs file sets
+            for chunk_index, chunk in enumerate(data_chunks):  
+                logger.info(f"Reading data from with uproot for chunk {chunk_index+1}/{len(data_chunks)}")
+                exception = 0
+                # While there are still exceptions in reading the file, remove file causing exception and re-read
+                while exception is not None:
+                    chunk_data, exception = read(chunk, trees_to_branch_names, skip_missing_sample)
+                    # If all files were read succesfully break before code tries to find errors
+                    if exception is None:   break
+                    broken_file = handle_exception(exception, skip_missing_files) 
+                    # if exception handled remove file with missing key
+                    chunk.remove(broken_file)
+                    # re-read rest of files. If exception is still not None, while loop starts over to remove next file
+                    chunk_data, exception = read(chunk,trees_to_branch_names, skip_missing_sample)
+                logger.info(f"Manipulating chunk data")
+                chunk_data = finalize(chunk_data,  sample, trees_to_status_to_branches)
+                
+                if len(chunk_data)!=0:
+                    logger.info(f"Writing chunk data")
+                    outfile = writer.write_sample(chunk_data, sample, cfg , suffix='_chunk'+str(out_idx))
+                    out_idx += 1
+                    done += 1
+                    if yields:
+                        if "weight" in chunk_data["nominal_Loose"].fields:  sample_yield += ak.sum(chunk_data["nominal_Loose"]["weight"])
+                        elif "fakes_weight" in chunk_data["nominal_Loose"].fields:  sample_yield += ak.sum(chunk_data["nominal_Loose"]["fakes_weight"])
+                        else:   sample_yield += ak.num(chunk_data["nominal_Loose"], axis=0)
+                    # Clean up memory
+                    del chunk_data
+                    gc.collect()
+                else:
+                    logger.warning(f"No data from chunk, not written out")
+            if done == 0 and not skip_missing_sample:
+                logger.error(f"No data saved from any chunks. Are you cutting too harshly?")
+            elif done == 0 and  skip_missing_sample:
+                logger.warning(f"No data saved from any chunks. Are you cutting too harshly?")
+        
+        # If some other error was found which is not caught by the process() function, display it and break
+        except Exception as not_uproot_except:
+            raise not_uproot_except
+        
+    return sample_yield if yields else None
 
 def chunk_files(files: List[str]) -> List[List[str]]:
     '''
@@ -172,47 +196,28 @@ def chunk_files(files: List[str]) -> List[List[str]]:
     Return
         list of lists of file paths
     '''
-    chunks: List[List[str]] = []
-    chunk_of_files: List = []
-    chunk_size: float = 0
-    for file in files:
-        # Add current file to chunk size. If files[i] != files[0]
-        # and files[i-1] is < 2GB,  chunk size would already have
-        # value chunk_size = size(files[i-1]). Else, chunk_size = 0
-        chunk_size+=os.path.getsize(file)*1e-9  # in GB
-        # If chunk size still less than 2GB
-        if chunk_size <= 2. : # in GB
-            # Append file to chunk
-            chunk_of_files.append(file)
-            # If we have added all files to a chunk but total size still < 4GB
-            if file == files[-1]:
-                # just append the chunk of files and we're done
-                chunks.append(chunk_of_files)
-        # If chunk_size+=size(files[i]) goes above 2 GB
-        else:
-            # if size(files[i-1]) was < 2 GB, chunk_of_files = [files[k],..,files[i-1]]
-            # otherwise chunk_of_files = []
-            if chunk_of_files != []:  
-                # store the list of files with total size < 2 GB
-                chunks.append(chunk_of_files)
-                # Clear up the chunk for new set of files
-                chunk_of_files = []
-            # Append files[i] to a new chunk
-            chunk_of_files.append(file)
-            # Reset the chunk size 
-            chunk_size = 0
-            # If size(files[i]) > 2 GB, it gets its own chunk
-            if os.path.getsize(file)*1e-9 > 2.:
-                chunks.append(chunk_of_files) # store chunk [files[i]] 
-                chunk_of_files = [] # clear array for next files[k>i]
-            else:
-                # If files[i] < 2GB, add its size to new chunk size
-                chunk_size+=os.path.getsize(file)*1e-9
+    limit = 2.
+    files_iter, filesizes = iter(files), iter([os.path.getsize(file)*1e-9 for file in files])
+    f, fs = next(files_iter), next(filesizes)
+    chunks = []
+    while f is not None:
+        chunk, chunksize = [], 0
+        while chunksize <= limit:
+            chunksize += fs
+            if (fs > limit and chunk != []) or (chunksize > limit and fs <= limit):
+                chunksize -= fs
+                break    
+            chunk.append(f)
+            fs = next(filesizes, None)
+            f = next(files_iter, None)
+            if f is None:   break
+        chunks.append(chunk)
 
+    assert sum([len(ch) for ch in chunks]) == len(files), f"Number of files being chunked ({len(files)})!= number of files after chunking {sum([len(ch) for ch in chunks])}"
     return chunks
 
 
-def read(chunk_files: List[str], trees_to_branch_names: Dict[str, str])-> Tuple[Optional[Dict[str, "ak.Array"]], Optional[Exception]]:
+def read(chunk_files: List[str], trees_to_branch_names: Dict[str, str], skipsample: bool)-> Tuple[Optional[Dict[str, "ak.Array"]], Optional[Exception]]:
     '''
     Function that calls uproot concatenate/iterate based on file sizes, catching exceptions while reading
     Args:
@@ -228,7 +233,8 @@ def read(chunk_files: List[str], trees_to_branch_names: Dict[str, str])-> Tuple[
 
     # If the chunks are empty, we have removed all files in exception handling
     if len(chunk_files) == 0:
-        logger.error("Chunk of files is empty. If files have been skipped, this might mean all files could not be read")
+        if not skipsample:  logger.error("Chunk of files is empty. If files have been skipped, this might mean all files could not be read")
+        else:   return {}, None
     
     chunk_data = {}
     for tree, branches in trees_to_branch_names.items():
@@ -250,6 +256,7 @@ def read(chunk_files: List[str], trees_to_branch_names: Dict[str, str])-> Tuple[
                 data = uproot.concatenate(chunk_tree, branches, library='ak')
                 logger.info(f"Storing data memory_info().rss (GB) = {psutil.Process(os.getpid()).memory_info().rss / 1024 ** 3}")
                 chunk_data[tree] = data
+
         except uproot.exceptions.KeyInFileError as uproot_except:
             return None, uproot_except
         except Exception as other_except:
@@ -303,13 +310,15 @@ def finalize(chunk_data: "Dict[str,ak.Array]", sample: "Sample", trees_to_status
     Return:
         chunk_data: Same as arg, but after manipulation
     '''
-
-    finished_data = []
+    if len(chunk_data) == 0:    return {} 
+    
     chunk_data = add_branches(chunk_data, trees_to_status_to_branches)
     if sample.selec is not None:
         chunk_data = apply_cuts(chunk_data, sample.selec)
-    chunk_data = drop_branches(chunk_data, trees_to_status_to_branches)
-    return chunk_data
+    if len(chunk_data) != 0:
+        chunk_data = drop_branches(chunk_data, trees_to_status_to_branches)
+        return chunk_data
+    else:   return {}
 
 
 def add_branches(trees_to_data: SampleDataType, trees_to_status_to_branches: BranchStatusType):
@@ -368,21 +377,12 @@ def create_new_branches(data: "ak.Array", new_branches: List["Branch"], mix_tree
         if len(set([br.write_name for br in new_branches]).intersection(set(branch.alg_args)))!=0:
             new_branches_from_others.append(branch)
             continue
-
         # if branches computed from multiple trees is not allowed 
         if not mix_trees:  # (initial call to this method comes here)
             if branch.args_from is None: #  check the branch doesn't need args from multiple trees
                 # Get args and execute the new beanch algo 
                 args = [data[arg] if branch.alg_arg_types[i] == Branch else arg for i, arg in enumerate(branch.alg_args)]
-                if branch.isprop:
-                    if len(args)>1:
-                        logger.error(f"Branch {branch.write_name} is supposed to be a propery of another branch, but you passed multiple args to 'args'")
-                    else:
-                        arg = args[0]
-                        data[branch.write_name] = getattr(arg, branch.alg)
-                else:
-                    data[branch.write_name] = branch.alg(*args)
-
+                data[branch.write_name] = branch.alg(*args)
         else: 
             if branch.args_from is not None: # only care to process branches from mixed trees
                 args_from = branch.args_from  # get tree names 
@@ -419,7 +419,7 @@ def apply_cuts(trees_to_data: SampleDataType, sel: CutFuncType)-> SampleDataType
         if len(data) != 0: # if we haven't filtered out all data
             trees_to_data[tree] = data
         else:
-            trees_to_data[tree] = None
+            trees_to_data = {}
     return trees_to_data
 
 
@@ -451,8 +451,3 @@ def drop_branches(trees_to_data: SampleDataType, trees_to_status_to_branches: Br
             trees_to_data[tree] = None
     trees_to_data = {tree:data for tree,data in trees_to_data.items() if data is not None}
     return trees_to_data
-
-
-
-
-        

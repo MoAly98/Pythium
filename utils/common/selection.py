@@ -1,3 +1,4 @@
+
 class Selection(object):
     def __init__(self, func, args, label = None):
         self._func = func

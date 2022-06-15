@@ -1,5 +1,5 @@
 ''' We create a sample class '''
-from typing import Dict, Callable, List
+from typing import List, Dict, Callable
 from pathlib import Path
 class Sample:
     def __init__(self, name, tag, where, branches, selec=None):
