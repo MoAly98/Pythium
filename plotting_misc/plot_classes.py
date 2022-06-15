@@ -442,6 +442,28 @@ class Hist1D(EmptyPlot):
         hep.plot.yscale_text(ax)
     
     
+    def get_data_markers(self, as_list : bool = False) -> dict:
+        data_markers = {}
+        marker_list = []
+        if not isinstance(self.rcps['lines.marker'], list):
+            self.rcps['lines.marker'] = list(self.rcps['lines.marker'])
+        for marker in self.rcps['lines.marker']:
+            if marker not in self.markerstyles.keys():
+                #TODO: warning message for invalid marker style
+                self.rcps['lines.marker'].remove(marker)
+        if len(self.rcps['lines.marker']) < len(self.data):
+            #TODO: warning message for length of marker list, fetching from filled markers
+            for filled_mark in list(mpl.markers.MarkerStyle.filled_markers):
+                if filled_mark not in self.rcps['lines.marker']:
+                    self.rcps['lines.marker'].append(filled_mark)
+                if len(self.rcps['lines.marker']) >= len(self.data): break
+        for i,samplename in enumerate(self.data):
+            data_markers[samplename] = self.rcps['lines.marker'][i]
+            marker_list.append(self.rcps['lines.marker'][i])
+        if as_list: return marker_list
+        else: return data_markers
+
+
     def assign_colors(self, custom: list =None, d : dict = None) -> None:
         """ Fills colors_dict accordingly """
         
@@ -564,6 +586,7 @@ class Hist1D(EmptyPlot):
         """ Main function to plot scatter data points """
         
         H, _clist, _llist = self.get_samples_colors_labels(self.data_dict)
+        markers = self.get_data_markers(as_list = True)
         if data:
             H = data
             _bins = self.edges
@@ -584,7 +607,7 @@ class Hist1D(EmptyPlot):
             yerr=_yerr, 
             histtype='errorbar',
             color=_clist,
-            marker=self.rcps['lines.marker'][:len(H)],
+            marker = markers,
             markersize=self.rcps['lines.markersize'],
             label=_llist
         )
@@ -823,7 +846,7 @@ class RatioPlot(Hist1D):
                     if samplename == self.reference:
                         self.denominator[samplename] = sample
                         self.dvals = list(next(iter(self.denominator.values())).values())
-                    else:
+                    elif samplename in self.samples:
                         self.numerators[samplename] = sample
             elif self.reference == 'total':
                 if self.data and len(self.data) == 1:
@@ -831,6 +854,13 @@ class RatioPlot(Hist1D):
                     self.dvals = self.get_stackvalues(self.histos_list)
                 else:
                     logging.error("Please specify one (and only one) sample that will be plotted as data using the 'data' argument")
+            #elif self.reference == 'data':
+            #    self.denominator = self.data_dict
+            #    for samplename, sample in self.samples_dict.items():
+            #        if samplename in self.samples:
+            #            self.numerators[samplename] = sample
+            #            self.dvals = list(next(iter(self.denominator.values())).values())
+
             else:
                 logging.error("Selected reference is not in 'samples'")
         else:
@@ -853,6 +883,11 @@ class RatioPlot(Hist1D):
     def ratio_scatters(self, samplename: str, color: str) -> None:
         """ Used when need to plot ratio values in bot plot as scatter points """
 
+        markers = self.get_data_markers()
+        markerstyle = None
+        if samplename in markers.keys(): 
+            markerstyle = markers[samplename]
+
         hep.histplot(
             # np.ones(len(self.ratiovalues[samplename])),
             self.ratiovalues[samplename],
@@ -861,14 +896,13 @@ class RatioPlot(Hist1D):
             yerr=False, 
             histtype='errorbar',
             color=color,
-            marker=self.rcps['lines.marker'][:len(self.ratiovalues[samplename])],
+            marker=markerstyle,
             markersize=self.rcps['lines.markersize'],
         )
         
     
     def ratio_histbins(self, samplename: str, color: str) -> None:
         """ Used when need to plot ratio values in bot plot as hist bins """
-        print(color)
 
         if self.shape == 'hollow':
             self.botax.stairs(
@@ -948,11 +982,11 @@ class RatioPlot(Hist1D):
     
     
     def bot_plot(self) -> None:
-                    
-        ___, _clist = self.get_samples_colors(self.numerators)
+
+        ___, _clist, ___ = self.get_samples_colors_labels(self.numerators)
         if type(_clist) != list:
             _clist = [_clist]
-
+        
         # iterate through all samples in self.numerators along with corresponding color
         for i, samplename in enumerate(self.numerators.keys()):
             if samplename in self.data or self.data == 'all':
@@ -1054,6 +1088,7 @@ class PullPlot(EmptyPlot):
             'markersize': 3,
             'elinewidth': 1
         }
+        self.xtitles_dict['xmain'] = r'$(\hat{\theta}-\theta)/\Delta\theta$'
     
 
     def set_figsize(self):
