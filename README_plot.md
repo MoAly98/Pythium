@@ -1,4 +1,4 @@
-# Pythium Plots (TEMP)
+# Pythium Plots
 
 A (quick) thorough walkthrough of how plotting classes work in Pythium. Currently, Jupyter test files that are present in the `plot_misc` file contain plot classes and examples of use cases. The file `plot_classes.py` stores all classes.
 
@@ -18,14 +18,17 @@ This behaviour is universal for all plots, although internally, the way variable
 
 `create()` serves the same purpose for all plots but is slightly different for each of them; for this reason it is not included in `EmptyPlot`, but rather defined separately in each class.
 
-### Optional public functions
+### Optional public functions in `EmptyPlot`
 
-Sorry, but for now, you will have to deal with the text I already wrote for my report 😛 (it's basically the same section)
+* `set_axislabels(fontsize, {axis labels})`: Set font size and axis labels for the axis specified, $e.g.$ `xmain` or `ybot`.
+* `fontsize_options(title, labels, ticks)`: General function that can set font sizes of title, axis labels and axis label ticks in one go (kwargs so not all of them have to be called). This means that the font size of axis labels can be set either using this function or `set_axislabels()`. Note that in `PullPlot`, the axis label ticks are letters, so the ticks font size will change the font size of these letters.
+* `saveimage(name, dpi)`: Save the plot as a `png` file with given name and dpi. It calls the matplotlib `fig.savefig()` function. Default dpi is 1000.
 
-![image](https://user-images.githubusercontent.com/91688435/169562993-8de88201-d4a6-4ce8-b21b-5eddd3c6586f.png)
+### Functions that have same functionality but are written differently in each class
 
-![image](https://user-images.githubusercontent.com/91688435/169563527-1c0672b2-9e10-44ed-83e6-c7eb4eb6298c.png)
-
+* `figure_options()`: Sets "physical" variables of the figure. In `RatioPlot` and `ProjectionPlot`, sets the `stretch` (how big the main plot is compared to the subplot) and `spacing` (space between main plot and subplot) variables of the figure. In `PullPlot` can change the side on which to diaply the parameter names of the plot.
+* `plot_options()`: Sets plot specific features and allows for user-defined dictionary to be passed in to modify some `rcParams` that are already used. In `Hist1D`, it sets the histogram `shape`, grid, marker style and size, number of columns in legend entries. In `PullPlot` it sets the center $x$ value of the plot and a custom range for the $x$ axis can be also passed. In `ProjectionPlot` it sets the grid. In `CMatrixPlot` it turns on the color bar and sets the number of decimal places to display in each cell (default is 1).
+* `color_options()`: In `Hist1D`, can either set individual colors for the data plotted, or can input a colormap that will be used to generate the individual colors of the plotted elements. In `PullPlot` can change the colors of 1 and 2 $\sigma$ region colours. In `ProjectionPlot` and `CMatrixPlot` can set a different colormap to use.
 
 ### Titling system
 
@@ -370,10 +373,48 @@ this function calls `custom_yaxis()`, which does the following:
         
 ## PullPlot
 
+Visualise nuisance parameter pulls with 1 and 2 $\sigma$ region bands. The whole plot is a `matplotlib.errorbar` object, and can be fully customised externally because of the `errorbar_kw` dictionary, which stores all keyword arguments that can be passed into `ax.errorbar()`. The default is
+
+        self.errorbar_kw = {
+            'color'     : 'k',
+            'fmt'       : 'o',
+            'markersize': 3,
+            'elinewidth': 1
+        }
+
+This dictionary is updated using the public functions `plot_options` and `color_options` (to modify colors).
+
 ## ProjectionPlot
+
+Plots a 2D plot together with its $x$ and $y$ projections. The main plot is created using `main_plot` and the two projection subplots are created using `side_plots`. The former function uses `hep.hist2dplot`, while the latter function uses `hep.histlot` to plot the projections. No direct matplotlib functions are used.
 
 ## CMatrixPlot
 
-# Things that are not supported in the existing classes
+Visualise a correlation matrix plot using the matplotlib `ax.imshow` function. Can also put a color bar on the side to visually indicate the correlation strength of parameters.
 
-![image](https://user-images.githubusercontent.com/91688435/169566841-7ecf7125-e668-4d29-994c-718c3f969780.png)
+
+# Major features that are not supported in existing classes
+
+All classes: cannot customise the ATLAS logo (need a public function to handle this)
+
+### Hist1D
+* Cannot use stack=True and errros=’all’ simultaneously as this will cause an error in mplhep
+* Data samples cannot stack with histos samples (not sure if this is even required?)
+
+### RatioPlot
+* There is no option to display erorrbars on scatter points in the lower subplot, only the errors on the histo bins are shown
+
+### PullPlot
+* Cannot put more than one entry in each bin
+* ATLAS logo does not have luminosity and CoM energy
+* No Hist object input allowed
+
+### ProjectionPlot
+* There is no color bar under the plot for the 2D histogram
+
+### CMatrixPlot
+* Threshold function is wrong: for a given value of threshold, delets entier row/column if not all entries are above the threshold. Instead, it should be that row/column gets preserved if at least one values is above threshold.
+* No Hist object input allowed
+* Figure size does not automatically change on the number of rows/columns
+* Does not support plotting of two separate matrices (one on each side of diagonal)
+* Multiplier of values is fixed to 100. Cannot turn this off from externally
