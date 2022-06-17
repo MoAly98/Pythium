@@ -1271,14 +1271,16 @@ class ProjectionPlot(EmptyPlot):
     
     def __init__(self, obj, **kwargs):
         
-        super().__init__(layout=(2,2), **kwargs)
+        super().__init__(layout=(3,4), **kwargs)
         self.hist = obj
         self.set_color() # set default colormap
         
         # default attributes
         self.spacing = 0.2
-        self.stretch = 4
+        self.stretch = 4.
         self.need_grid = False
+        self.cbar_space = '2%'
+        self.cbar_size = '7%'
         
         self.store_data(self.hist)
     
@@ -1339,7 +1341,7 @@ class ProjectionPlot(EmptyPlot):
     def main_plot(self):
         """ Main plot function """
         
-        hep.hist2dplot(self.hist, ax=self.main_ax, cbar=False)
+        hep.hist2dplot(self.hist, ax=self.main_ax, cbar=True, cbarpad=self.cbar_space, cbarpos = 'right', cbarsize = self.cbar_size)
         
         # main plot
         _range = np.arange(self.edges[0], self.edges[-1]+0.5, 0.5)
@@ -1365,6 +1367,13 @@ class ProjectionPlot(EmptyPlot):
         # put atlas logo
         hep.atlas.text(self.logotext, ax=self.h_ax, loc=0)
 
+        #plot colour bar
+        #im = self.main_ax.imshow(self.hist, cmap=mpl.cm.get_cmap(self.user_cmap))
+        #self.main_ax.tick_params(axis='y', which='both', length=5, labelsize=10)
+        #self.fig.colorbar(im,cax=self.cax)
+        #self.main_ax.ticklabel_format(style='plain')
+    
+
         
     def set_h_ax(self, **hax_kw):
         """ Horizonthal subplot """
@@ -1376,7 +1385,7 @@ class ProjectionPlot(EmptyPlot):
         }
         self.hax_kw.update(hax_kw)
                 
-        # self.h_ax.set_xlim(-1, 1)
+        #self.h_ax.set_xlim(-1, 1)
         self.h_ax.tick_params(**self.hax_kw)
         
         
@@ -1394,15 +1403,18 @@ class ProjectionPlot(EmptyPlot):
         self.v_ax.tick_params(**self.vax_kw)
 
     
-    def figure_options(self, spacing=None, stretch=None, **figkw):
+    def figure_options(self, spacing=None, stretch=None, cbarsize=None,cbarspace=None, **figkw):
         
         super().figure_options(**figkw)
         
-        if spacing:
+        if spacing is not None:
             self.spacing = spacing
-        if stretch:
+        if stretch is not None:
             self.stretch = stretch
-    
+        if cbarsize is not None:
+            self.cbar_size = cbarsize
+        if cbarspace is not None:
+            self.cbar_space = cbarspace    
     
     def plot_options(self, gridstring='', rcp_kw={}):
                         
@@ -1425,16 +1437,22 @@ class ProjectionPlot(EmptyPlot):
         
         # create plot figure and subplots
         self.create_canvas()
+
+        cbarsize = float(self.cbar_size.strip('%'))/100.
+        cbarspace = float(self.cbar_space.strip('%'))/100.
+        cbarwidth = self.stretch/(1.-cbarsize-cbarspace)-self.stretch
+
         self.make_grid(
-            hspace=self.spacing, 
-            wspace=self.spacing, 
-            height_ratios=[1, self.stretch], 
-            width_ratios=[self.stretch, 1]
+            hspace=0,#self.spacing, 
+            wspace=0,#self.spacing, 
+            height_ratios=[1, self.spacing, self.stretch], 
+            width_ratios=[self.stretch, cbarwidth, self.spacing, 1]
         )
-        self.main_ax = self.make_subplot(1, 2, 0, 1)
         self.h_ax = self.make_subplot(0, 1, 0, 1) # horizonthal subplot
-        self.v_ax = self.make_subplot(1, 2, 1, 2) # vertical subplot
-        
+        self.v_ax = self.make_subplot(2, 3, 3, 4) # vertical subplot
+        self.main_ax = self.make_subplot(2, 3, 0, 2)
+
+
         # make plot
         self.side_plots()
         self.main_plot()
