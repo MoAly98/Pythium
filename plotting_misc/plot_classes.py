@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.colors as colors
 import matplotlib as mpl
 import mplhep as hep
 import boost_histogram as bh
@@ -256,7 +257,20 @@ class EmptyPlot(object):
 class Hist1D(EmptyPlot):
     
     
-    def __init__(self, observable: str, samples=[], data=[], labels={}, errors: str =None, stack=False, **kwargs) -> None:
+    def __init__(
+        self, 
+        observable: str, 
+        samples=[], 
+        data=[], 
+        labels={}, 
+        errors: str =None, 
+        logy: bool =None,
+        logx: bool =None, 
+        stack=False, 
+        xlim : Tuple[float,float] = None,
+        ylim : Tuple[float,float] = None,
+        **kwargs
+        ) -> None:
         
         super().__init__(**kwargs)
         
@@ -275,6 +289,10 @@ class Hist1D(EmptyPlot):
         self.is_stack = stack
         self.errors   = errors
         self.leglabels= labels
+        self.logy     = logy
+        self.logx     = logx
+        self.xlim     = xlim
+        self.ylim     = ylim
 
         self.samples_dict = {} # {'samplename': sample}
         self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
@@ -288,7 +306,8 @@ class Hist1D(EmptyPlot):
         self.scatterlabels = []
         
         self.check_input()
-        
+        self.check_axis_limits()
+
         # default variables
         self.shape = 'full' if self.is_stack else 'hollow'
         self.need_grid = False
@@ -355,6 +374,17 @@ class Hist1D(EmptyPlot):
                 self.histos_list.append(obj[samplename])        #FIXME: redundant? Used in ratio plot, but can use histos_dict.items to the same end
                 self.plot_types[samplename] = 'histo'           #FIXME: redundant? Not used
 
+    def check_axis_limits(self,logx: bool = None, logy: bool = None, xlim: Tuple[float,float]= None, ylim: Tuple[float,float]=None) -> None:
+        if logy: self.logy = True
+        if logx: self.logx = True
+        if xlim: self.xlim = xlim
+        if ylim: self.ylim = ylim
+        if self.ylim:
+            if self.logy and self.ylim[0] == 0:
+                logging.error(f"Cannot create a logarithmic y-scale with 0 minimum.")
+        if self.xlim:
+            if self.logx and self.xlim[0] == 0:
+                logging.error(f"Cannot create a logarithmic x-scale with 0 minimum.")
 
     def store_data(self) -> None:
         
@@ -667,7 +697,7 @@ class Hist1D(EmptyPlot):
         self.set_tickparams(ax, self.rcps['font.size'])
         
         # show full numbers without scientific notation
-        ax.ticklabel_format(style='scientific')
+        #ax.ticklabel_format(style='scientific')
         ax.yaxis.get_offset_text().set_fontsize(self.rcps['font.size'])
         ax.xaxis.get_offset_text().set_fontsize(self.rcps['font.size'])
         
@@ -688,6 +718,12 @@ class Hist1D(EmptyPlot):
         # set x and y axis labels
         self.set_xtitles(ax, 'xmain', self.fontsize)
         self.set_ytitles(ax, 'ymain', self.fontsize)
+
+        # set range of axes
+        if self.xlim: ax.set_xlim(self.xlim)
+        if self.ylim: ax.set_ylim(self.ylim)
+        if self.logx: ax.set_xscale('log')
+        if self.logy: ax.set_yscale('log')
         
     
     def set_legend(self, ax: mpl.axes.Axes) -> None:
@@ -736,6 +772,10 @@ class Hist1D(EmptyPlot):
         marker: str = None, 
         markersize: float = None, 
         legendcols: int = None,
+        logy: bool = None,
+        logx: bool = None,
+        xlim: Tuple[float,float] = None,
+        ylim: Tuple[float,float] = None,
         rcp_kw = {}
     ) -> None:
         
@@ -774,7 +814,9 @@ class Hist1D(EmptyPlot):
         # (otherwise would automatically switch to default colormap)
         if self.is_stack and shape == 'hollow' and len(self.samples) <= 10:
             self.assign_colors(self.color_order)
-        
+
+        self.check_axis_limits(logx,logy,xlim,ylim)
+
     
     def color_options(self, colors=[], colormap='', reverse=False) -> None:
         """ Allow user to enter custom colors for histos and data plots """
@@ -816,9 +858,32 @@ class Hist1D(EmptyPlot):
 class RatioPlot(Hist1D):
     
     
-    def __init__(self, samples=[], reference: str =None, data=[], errors: str =None, stack=False, **kwargs) -> None:
+    def __init__(
+        self, 
+        samples=[], 
+        reference: str =None, 
+        data=[], 
+        errors: str =None, 
+        logy: bool = None,
+        logx: bool = None,
+        ylim: Tuple[float,float] = None,
+        xlim: Tuple[float,float] = None, 
+        stack=False, 
+        **kwargs
+        ) -> None:
         
-        super().__init__(samples=samples, data=data, errors=errors, stack=stack, layout=(2,1), **kwargs)
+        super().__init__(
+            samples=samples, 
+            data=data, 
+            errors=errors, 
+            logy=logy, 
+            logx=logx,
+            ylim=ylim,
+            xlim=xlim, 
+            stack=stack, 
+            layout=(2,1), 
+            **kwargs
+            )
         self.check_input
         
         self.reference = reference
@@ -977,7 +1042,7 @@ class RatioPlot(Hist1D):
         self.hist_plot(self.mainax)
         
         # set x axis ticks
-        self.mainax.set_xticks(np.linspace(self.edges[0], self.edges[-1], 11))
+        #self.mainax.set_xticks(np.linspace(self.edges[0], self.edges[-1], 11))
         self.mainax.set_xticklabels([]) # suppress x tick labels
     
     
@@ -1009,7 +1074,7 @@ class RatioPlot(Hist1D):
         if self.ytitles_dict['ybot']:
             self.set_ytitles(self.botax, 'ybot', self.fontsize)
         else:
-            self.botax.set_ylabel(f"Ratio against \n{self.reference}", fontsize=self.fontsize)
+            self.botax.set_ylabel(f"Ratio against \n{self.leglabels[self.reference]}", fontsize=self.fontsize)
         
         # draw horizontal line at y=1
         self.botax.axhline(1, -1, 2, color='k', linestyle='--', linewidth=0.7)
@@ -1019,7 +1084,10 @@ class RatioPlot(Hist1D):
             self.botax.set_ylim(self.ylims)
             self.botax.set_yticks(self.ybotrange)
             self.botax.set_yticklabels(self.ybotlabels, fontsize=self.rcps['font.size'])
-        
+
+        if self.xlim: self.botax.set_xlim(self.xlim)
+        if self.logx: self.botax.set_xscale('log')
+                
         # put grid if requested
         if self.need_grid:
             self.botax.grid(axis=self.gridaxis, linestyle=self.gridline, alpha=0.3, color='k')
@@ -1055,7 +1123,6 @@ class RatioPlot(Hist1D):
         self.make_grid(hspace=self.spacing, height_ratios=[self.stretch,1])
         self.mainax = self.make_subplot(0, 1, 0, 1)
         self.botax  = self.make_subplot(1, 2, 0, 1)
-        
         # make plot
         self.ratio_plot()
         
@@ -1271,16 +1338,20 @@ class ProjectionPlot(EmptyPlot):
     
     def __init__(self, obj, **kwargs):
         
-        super().__init__(layout=(3,4), **kwargs)
+        super().__init__(layout=(5,3), **kwargs)
         self.hist = obj
         self.set_color() # set default colormap
         
         # default attributes
-        self.spacing = 0.2
+        self.spacing = 0.15
         self.stretch = 4.
         self.need_grid = False
-        self.cbar_space = '2%'
-        self.cbar_size = '7%'
+        self.cbar_space = '15%'
+        self.cbar_size = '5%'
+        self.xtitles_dict['xcbar'] = ''
+        self.figsize = (8,8)
+        self.norm = None
+        self.logz = None
         
         self.store_data(self.hist)
     
@@ -1291,8 +1362,10 @@ class ProjectionPlot(EmptyPlot):
         self.pd_data = pd.DataFrame(obj.to_numpy()[0])
         self.xsum = self.pd_data.sum(axis=0).to_list()
         self.ysum = self.pd_data.sum(axis=1).to_list()
-        self.edges = [x for [x] in [list(obj.axes.edges[0][i]) for i in range(len(obj.axes.edges[0]))]]
-        
+        self.xedges = [x for [x] in [list(obj.axes.edges[0][i]) for i in range(len(obj.axes.edges[0]))]]
+        self.yedges = [y for y in obj.axes.edges[1][0]]
+        self.vmin = min(self.pd_data)
+        self.vmax = max(self.pd_data)
     
     def side_plots(self):
         """ Make vertical and horizontal plots """
@@ -1300,31 +1373,31 @@ class ProjectionPlot(EmptyPlot):
         # horizontal plot
         hep.histplot(
             self.xsum, 
-            bins=self.edges, 
+            bins=self.xedges, 
             ax=self.h_ax, 
             color='k', 
-            zorder=3
+            zorder=1
         )
         self.set_h_ax()
 
         # adjust ticks
-        self.h_ax.ticklabel_format(style='plain')
+        #self.h_ax.ticklabel_format(style='plain')
         for ytick in self.h_ax.yaxis.get_major_ticks():
             ytick.label.set_fontsize(self.rcps['font.size'])
         
         # vertical plot
         hep.histplot(
             self.ysum, 
-            bins=self.edges, 
+            bins=self.yedges, 
             ax=self.v_ax, 
             color='k', 
-            zorder=3, 
+            zorder=1, 
             orientation='horizontal'
         )
         self.set_v_ax()
 
         # adjust ticks
-        self.v_ax.ticklabel_format(style='plain')
+        #self.v_ax.ticklabel_format(style='plain')
         for xtick in self.v_ax.xaxis.get_major_ticks():
             xtick.label.set_fontsize(self.rcps['font.size'])
         
@@ -1341,19 +1414,27 @@ class ProjectionPlot(EmptyPlot):
     def main_plot(self):
         """ Main plot function """
         
-        hep.hist2dplot(self.hist, ax=self.main_ax, cbar=True, cbarpad=self.cbar_space, cbarpos = 'right', cbarsize = self.cbar_size)
+        hep.hist2dplot(
+            self.hist, 
+            ax=self.main_ax, 
+            zorder=2, #FIXME draw last to hide weird square created with pcolor
+            cbar=False,
+            norm=self.norm
+        )
         
         # main plot
-        _range = np.arange(self.edges[0], self.edges[-1]+0.5, 0.5)
-        label_list = [f'{x:.1f}' for x in _range]
+        _xrange = np.arange(self.xedges[0], self.xedges[-1]+0.5, 0.5)
+        xlabel_list = [f'{x:.1f}' for x in _xrange]
+        _yrange = np.arange(self.yedges[0], self.yedges[-1]+0.5, 0.5)
+        ylabel_list = [f'{y:.1f}' for y in _yrange]
         
         # x axis
-        self.main_ax.set_xticks(_range)
-        self.main_ax.set_xticklabels(label_list, fontsize=self.rcps['font.size'])
+        self.main_ax.set_xticks(_xrange) #FIXME:_xrange
+        self.main_ax.set_xticklabels(xlabel_list, fontsize=self.rcps['font.size'])
         
         # y axis
-        self.main_ax.set_yticks(_range)
-        self.main_ax.set_yticklabels(label_list, fontsize=self.rcps['font.size'])
+        self.main_ax.set_yticks(_yrange) #FIXME: _yrange
+        self.main_ax.set_yticklabels(ylabel_list, fontsize=self.rcps['font.size'])
         
         # set title
         self.fig.suptitle(self.mastertitle, fontsize=self.rcps['axes.titlesize'])
@@ -1364,17 +1445,19 @@ class ProjectionPlot(EmptyPlot):
         self.set_xtitles(self.v_ax, 'xright', self.fontsize, loc=self.rcps['xaxis.labellocation'])
         self.set_ytitles(self.h_ax, 'ytop', self.fontsize, loc=self.rcps['yaxis.labellocation'])
         
-        # put atlas logo
-        hep.atlas.text(self.logotext, ax=self.h_ax, loc=0)
+        #FIXME: put atlas logo -> generalise Hist1D::set_explabel
+        hep.atlas.text(self.logotext, ax=self.title_ax, loc=2)
 
         #plot colour bar
-        #im = self.main_ax.imshow(self.hist, cmap=mpl.cm.get_cmap(self.user_cmap))
-        #self.main_ax.tick_params(axis='y', which='both', length=5, labelsize=10)
-        #self.fig.colorbar(im,cax=self.cax)
-        #self.main_ax.ticklabel_format(style='plain')
-    
+        im = self.main_ax.pcolor(self.hist, norm=self.norm, cmap=mpl.cm.get_cmap(self.user_cmap))
+        self.cax.tick_params(axis='y', which='both', length=5, labelsize=10)
+        cbar = self.fig.colorbar(im,cax=self.cax, orientation="horizontal")
+        cbar.ax.tick_params(labelsize=10)
+        cbar.set_label(self.xtitles_dict['xcbar'], loc='center', fontsize = self.rcps['font.size'])
 
-        
+        #TODO: set x and y axis log scale options and limits
+
+    #TODO: Set projection plot axis limits   
     def set_h_ax(self, **hax_kw):
         """ Horizonthal subplot """
         
@@ -1387,8 +1470,10 @@ class ProjectionPlot(EmptyPlot):
                 
         #self.h_ax.set_xlim(-1, 1)
         self.h_ax.tick_params(**self.hax_kw)
+        if self.logz:
+            self.h_ax.set_yscale('log')
         
-        
+    #TODO: Set projection plot axis limits
     def set_v_ax(self, **vax_kw):
         """ Vertical subplot """
         
@@ -1401,22 +1486,11 @@ class ProjectionPlot(EmptyPlot):
                 
         # self.v_ax.set_ylim(-1, 1)
         self.v_ax.tick_params(**self.vax_kw)
+        if self.logz:
+            self.v_ax.set_xscale('log')
 
     
-    def figure_options(self, spacing=None, stretch=None, cbarsize=None,cbarspace=None, **figkw):
-        
-        super().figure_options(**figkw)
-        
-        if spacing is not None:
-            self.spacing = spacing
-        if stretch is not None:
-            self.stretch = stretch
-        if cbarsize is not None:
-            self.cbar_size = cbarsize
-        if cbarspace is not None:
-            self.cbar_space = cbarspace    
-    
-    def plot_options(self, gridstring='', rcp_kw={}):
+    def plot_options(self, gridstring='', rcp_kw={}, logz=None, vmin=None, vmax=None):
                         
         # update rcp dictionary if passed
         self.rcps.update({k: v for k, v in rcp_kw.items() if k in mpl.rcParams})
@@ -1426,6 +1500,16 @@ class ProjectionPlot(EmptyPlot):
         if gridstring:
             self.gridstring_converter(gridstring)
             self.need_grid = True
+        
+        if vmin: self.vmin = vmin
+        if vmax: self.vmax = vmax
+        if logz:
+            self.logz=True
+            if self.vmin == 0:
+                logging.error(f"Cannot set logarithmic z-scale with minimum of 0")
+            self.norm = colors.LogNorm(self.vmin,self.vmax)
+        elif vmin or vmax:
+            self.norm = colors.Normalize(vmin=self.vmin,vmax=self.vmax)
     
     
     def color_options(self, colormap=None, reverse=False):
@@ -1440,18 +1524,20 @@ class ProjectionPlot(EmptyPlot):
 
         cbarsize = float(self.cbar_size.strip('%'))/100.
         cbarspace = float(self.cbar_space.strip('%'))/100.
-        cbarwidth = self.stretch/(1.-cbarsize-cbarspace)-self.stretch
+        #cbarwidth = self.stretch/(1.-cbarsize-cbarspace)-self.stretch #in case of cbar=True in hist2dplot
 
         self.make_grid(
             hspace=0,#self.spacing, 
             wspace=0,#self.spacing, 
-            height_ratios=[1, self.spacing, self.stretch], 
-            width_ratios=[self.stretch, cbarwidth, self.spacing, 1]
+            height_ratios=[1, self.spacing,self.stretch, self.stretch*cbarspace, self.stretch*cbarsize], 
+            width_ratios=[self.stretch,self.spacing,1]
         )
-        self.h_ax = self.make_subplot(0, 1, 0, 1) # horizonthal subplot
-        self.v_ax = self.make_subplot(2, 3, 3, 4) # vertical subplot
-        self.main_ax = self.make_subplot(2, 3, 0, 2)
-
+        self.h_ax = self.make_subplot(0, 1, 0, 1 ) # horizonthal subplot
+        self.v_ax = self.make_subplot(2, 3, 2, 3 ) # vertical subplot
+        self.main_ax = self.make_subplot(2, 3, 0, 1) # main subplot
+        self.cax = self.make_subplot(4, 5, 0, 1) # colorbar
+        self.title_ax = self.make_subplot(0, 1, 2, 4)
+        self.title_ax.axis('off')
 
         # make plot
         self.side_plots()
@@ -1459,7 +1545,6 @@ class ProjectionPlot(EmptyPlot):
         
         if save_name:
             self.saveimage(save_name, dpi)
-            
             
 class CMatrixPlot(EmptyPlot):
     
