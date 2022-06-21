@@ -312,6 +312,7 @@ class Hist1D(EmptyPlot):
         self.shape = 'full' if self.is_stack else 'hollow'
         self.need_grid = False
         self.legend_ncols = 1
+        self.legend_loc = 'upper right'
         
         # list of basic 10 colors the class will automatically use (if number of plotted elements is less than 10)
         # (chosen from: https://matplotlib.org/stable/gallery/color/named_colors.html)
@@ -736,12 +737,14 @@ class Hist1D(EmptyPlot):
             fontsize=self.fontsize,
             markerscale=self.rcps['legend.markerscale'],
             labelspacing=self.rcps['legend.labelspacing'],
-            handletextpad=self.rcps['legend.handletextpad']
+            handletextpad=self.rcps['legend.handletextpad'],
+            loc=self.legend_loc
         )
         
         # sort legend entries
         hep.sort_legend(ax)
-
+        #if hep.plot.overlap(ax, hep.plot._draw_leg_bbox(ax)):
+        #hep.plot.yscale_legend(ax) #FIXME: done iteratively in mplhep backend and takes too long.
         
     def colorlist_gen(self, n: int, colormap='gist_rainbow', reverse=False, max=98, min=2) -> list:
         """ Create custom color list of length n from a given colormap """
@@ -772,6 +775,7 @@ class Hist1D(EmptyPlot):
         marker: str = None, 
         markersize: float = None, 
         legendcols: int = None,
+        legendloc: str = None,
         logy: bool = None,
         logx: bool = None,
         xlim: Tuple[float,float] = None,
@@ -809,6 +813,10 @@ class Hist1D(EmptyPlot):
         # change number of columns in the legend
         if legendcols:
             self.legend_ncols = legendcols
+        
+        # change location of legend
+        if legendloc:
+            self.legend_loc = legendloc
         
         # if it is a stack plot but the shape is hollow, use color_order
         # (otherwise would automatically switch to default colormap)
@@ -1510,6 +1518,7 @@ class ProjectionPlot(EmptyPlot):
             self.norm = colors.LogNorm(self.vmin,self.vmax)
         elif vmin or vmax:
             self.norm = colors.Normalize(vmin=self.vmin,vmax=self.vmax)
+        #TODO: add functionality for other options https://matplotlib.org/stable/tutorials/colors/colormapnorms.html
     
     
     def color_options(self, colormap=None, reverse=False):
