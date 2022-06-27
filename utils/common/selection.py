@@ -5,6 +5,14 @@ class Selection(object):
         self._args = args
         self._label = label # to print on plots
     
+    @classmethod
+    def fromStr(cls, string_op, label = None, *, vardict = {}):
+        
+        def _eval(string, vardict):
+            return ev.Evaluator(vardict).evaluate(string)
+        
+        return cls(_eval, [string_op, vardict], label = label)
+
     @property
     def args(self):
         return self._args

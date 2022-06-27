@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 from pathlib import Path 
-from thbbanalysis.common import logger 
+from utils.common import logger 
 from pydoc import importfile
 import types
 logger = logger.ColoredLogger()

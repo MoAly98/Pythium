@@ -16,11 +16,11 @@ import time
 import psutil
 import gc
 #============ thbbanalysis Imports
-from thbbanalysis.common.branches import *
-from thbbanalysis.common.tools import combine_list_of_dicts
+from utils.common.branches import *
+from utils.common.tools import combine_list_of_dicts
 #import thbbanalysis.sklimming as sklim
-from thbbanalysis.sklimming import writer
-from thbbanalysis.common import tools
+from utils.sklimming import writer
+from utils.common import tools
 
 
 
@@ -127,10 +127,7 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
     '''
     skip_missing_files = cfg['settings']['skipmissingfiles']
     skip_missing_sample = cfg['settings']['skipmissingsamples']
-    yields = cfg['settings']['yields']
     tag = sample.tag
-    
-    sample_yield = 0
     out_idx = 0
 
     for path in paths:
@@ -166,10 +163,7 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
                     outfile = writer.write_sample(chunk_data, sample, cfg , suffix='_chunk'+str(out_idx))
                     out_idx += 1
                     done += 1
-                    if yields:
-                        if "weight" in chunk_data["nominal_Loose"].fields:  sample_yield += ak.sum(chunk_data["nominal_Loose"]["weight"])
-                        elif "fakes_weight" in chunk_data["nominal_Loose"].fields:  sample_yield += ak.sum(chunk_data["nominal_Loose"]["fakes_weight"])
-                        else:   sample_yield += ak.num(chunk_data["nominal_Loose"], axis=0)
+
                     # Clean up memory
                     del chunk_data
                     gc.collect()
@@ -184,7 +178,7 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
         except Exception as not_uproot_except:
             raise not_uproot_except
         
-    return sample_yield if yields else None
+    return None
 
 def chunk_files(files: List[str]) -> List[List[str]]:
     '''
@@ -382,7 +376,14 @@ def create_new_branches(data: "ak.Array", new_branches: List["Branch"], mix_tree
             if branch.args_from is None: #  check the branch doesn't need args from multiple trees
                 # Get args and execute the new beanch algo 
                 args = [data[arg] if branch.alg_arg_types[i] == Branch else arg for i, arg in enumerate(branch.alg_args)]
-                data[branch.write_name] = branch.alg(*args)
+                if branch.isprop:
+                    if len(args)>1:
+                        logger.error(f"Branch {branch.write_name} is supposed to be a propery of another branch, but you passed multiple args to 'args'")
+                    else:
+                        arg = args[0]
+                        data[branch.write_name] = getattr(arg, branch.alg)
+                else:
+                    data[branch.write_name] = branch.alg(*args)
         else: 
             if branch.args_from is not None: # only care to process branches from mixed trees
                 args_from = branch.args_from  # get tree names 

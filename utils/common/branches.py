@@ -1,6 +1,6 @@
 ''' We create a Branch class'''
 from typing import Any, Dict, List, Optional, Union, Callable, TypeVar, Type
-from thbbanalysis.common import logger
+from utils.common import logger
 import sys
 logger = logger.ColoredLogger()
 
@@ -15,7 +15,8 @@ class Branch:
                  args: AlgArgs = None, args_types: AlgArgsTypes = None, 
                  branch_type: Optional[str] = 'on',
                  args_from: List[str] = None,
-                 drop: bool = False):
+                 drop: bool = False,
+                 isprop: bool = False):
         self.write_name = out_name
         self.alg = alg # Can be a string with branch name, or a function
         self.alg_args = args
@@ -23,4 +24,6 @@ class Branch:
         self.branch_type = branch_type if isinstance(alg, str) else 'new'
         self.drop = drop
         self.args_from = args_from
+        self.isprop = isprop
+        if self.isprop: self.branch_type = 'new'
 
