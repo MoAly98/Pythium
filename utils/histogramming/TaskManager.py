@@ -2,6 +2,8 @@ from utils.common.tools import h5py_to_ak, json_to_ak, parquet_to_ak
 import dask
 from collections import defaultdict
 from pprint import pprint
+import boost_histogram as bh
+import awkward as ak
 
 class _TaskManager(object):
     def __init__(self, outdir, method):
@@ -17,7 +19,7 @@ class _TaskManager(object):
 
     @dask.delayed
     def _get_data(self, inpath, observables):
-        data = self.reader(inpath, [v.name for v in observables])
+        data = self.reader(inpath, list(set([v.name for v in observables])))
         return data
     
     @dask.delayed
@@ -30,18 +32,38 @@ class _TaskManager(object):
         axes = observable.axes
         h = bh.Histogram(*axes, storage=bh.storage.Weight())
         ## TODO:: Now to fill we need to do some data rendering
-        h.fill(var_data, weight = observable.weights)
+        #h.fill(var_data, weight = observable.weights)
         
         return h
 
     @dask.delayed
     def _create_variables(self, data, xps):
-        observable = xp["observable"]
-        if observable.builder is None:  return data
-        else:
-            # Build the variable according to builder and add it to data
-            pass
-        pass
+        
+        new_data = data
+        # Loop through xp observables:
+        for xp,_ in xps:
+            observable = xp["observable"]
+            builder = observable.builder
+            if observable.builder is None:  continue
+            else:
+                # Build the variable according to builder and add it to data
+                # Check if other new observables need to be built first before creating current observable
+                later = []
+                if len(set([xp["observable"].name for xp, _ in xps if xp["observable"].builder is not None]).intersection(set(builder.req_vars)))!=0:
+                    later.append((xp, None))
+                    continue
+                builder.vardict = {rv: data[rv] for rv in builder.req_vars}
+                args = [data[arg] if builder.argtypes[i] == "VAR" else arg for i, arg in enumerate(builder.args)]
+                if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
+                    # Then I am a string constructor because no data was retrieved
+                    args = [builder.vardict if arg=={} else arg for arg in args]
+                
+                new_data[observable.name] = builder.func(*args)
+
+        if later != []:
+            new_data = _create_variables(new_data, later, )                
+                
+        return new_data
     
     @dask.delayed
     def _apply_cut(self, data, xp):
@@ -69,7 +91,7 @@ class _TaskManager(object):
         
         xp_to_hists = defaultdict(list)
         for path, xps in path_to_xp.items():
-            data = self._get_data(path, list(xps[0][1]))
+            data = self._get_data(path,  list(xps[0][1]))[0]
             data = self._create_variables(data, xps)
             for xp_info in xps:
                 xp = xp_info[0]

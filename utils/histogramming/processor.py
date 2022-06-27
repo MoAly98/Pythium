@@ -5,6 +5,8 @@ from glob import glob
 import os
 from collections import defaultdict
 from pprint import pprint
+import dask
+import boost_histogram as bh
 class Processor(object):
     
     def __init__(self, config):
@@ -30,14 +32,14 @@ class Processor(object):
         observables = self.cfg["observables"]
 
         
-        xp_iter = list(self.cross_product(samples, regions, systematics, observables))[:10]
+        xp_iter = list(self.cross_product(samples, regions, systematics, observables))
         input_manager =  InputManager(xp_iter, self.cfg)
         xp_to_req_vars = input_manager.required_variables()
         xp_to_paths = input_manager.required_paths()
 
         task_manager = _TaskManager(hist_folder, input_manager.reader)
         task_tree= task_manager._build_tree(xp_to_paths, xp_to_req_vars)
-
+        dask.compute(task_tree)
 
     
     def cross_product(self, samples, regions, systematics, observables):
@@ -114,9 +116,11 @@ class InputManager(object):
 
                 paths = list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ]))
                 if systematic is not None:
-                    print(sample.name, region.name, observable.name, systematic.name, template, paths)
+                    pass
+                    #print(sample.name, region.name, observable.name, systematic.name, template, paths)
                 else:
-                    print(sample.name, region.name, observable.name, None, template, paths)
+                    pass
+                    #print(sample.name, region.name, observable.name, None, template, paths)
                 xp_to_paths[xp] = paths
                
             

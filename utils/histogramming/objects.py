@@ -30,7 +30,7 @@ class CrossProduct(object):
             try:    return self._xp[item]
             except IndexError:  raise IndexError(f"Index {item} out of range for CrossProduct object")
         else:
-            raise IndexError("CrossProduct object can be accessed by integers or one of following keys (sample, region, obserbale, systematic, template)")
+            raise TypeError("CrossProduct object can be accessed by integers or one of following keys (sample, region, obserbale, systematic, template)")
     def __iter__(self):
         return iter(self._xp)
 
@@ -84,7 +84,7 @@ class _ObservableBuilder(object):
     @beartype
     def __init__(self, func: Callable, args: List[Union[str, int, float, Dict, None]], *, lit_str_arg: List[str] = [], reqvars: Optional[List[str]] = None):
         self._func = func
-        self._argtypes = [Branch if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
+        self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
         self._args = args
         # This should hold the awkward array name to variable mapping
         # so that the fields in the string can be retrieved from the 
@@ -97,9 +97,9 @@ class _ObservableBuilder(object):
     def fromStr(cls, string_op: str, *, vardict: Dict = {}) -> TObservableBuilder:
         
         def _eval(string, vardict):
-            return Evaluator(vardict).evaluate(string)
+            return Evaluator(**vardict).evaluate(string)
         
-        return cls( _eval, [string_op, vardict],  reqvars = Evaluator().get_names(string_op))
+        return cls( _eval, [string_op, vardict], lit_str_arg = [string_op], reqvars = Evaluator().get_names(string_op))
     
     @property
     def func(self) -> Callable:
@@ -115,7 +115,8 @@ class _ObservableBuilder(object):
         return self._name
     @property
     def vardict(self) -> str:
-        return self._name
+        return self._vardict
+    
     @vardict.setter
     def vardict(self, thedict: Dict):
         self._vardict = thedict
@@ -150,7 +151,7 @@ class Observable(object):
     def __init__( self, var: str, name: str, binning: Union[_Binning, List[_Binning]], 
                   dataset: str, label: Optional[str] = '', 
                   samples:Optional[List[str]] = None, 
-                  weights: Union[str, np.ndarray, list[int, float]] = 1,
+                  weights: Union[str, np.ndarray, list[Union[int, float]]] = 1,
                   exclude_samples: Optional[List[str]] = None,
                   regions: Optional[List[str]] = None,
                   exclude_regions: Optional[List[str]] = None, *,
@@ -203,7 +204,7 @@ class Observable(object):
     def get_axes(self):
         axes = []
         for binning in self.binning:
-            if isinstance(binning, RegBinning):
+            if isinstance(binning, RegBin):
                 axis = bh.axis.Regular(binning.nbins, binning.min, binning.max)
             else:
                 axis = bh.axis.Variable(binning.binning)
