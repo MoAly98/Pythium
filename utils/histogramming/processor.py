@@ -39,7 +39,7 @@ class Processor(object):
 
         task_manager = _TaskManager(hist_folder, input_manager.reader)
         task_tree= task_manager._build_tree(xp_to_paths, xp_to_req_vars)
-        dask.compute(task_tree)
+        dask.compute(task_tree, scheduler = "synchronous")
 
     
     def cross_product(self, samples, regions, systematics, observables):

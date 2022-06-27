@@ -4,6 +4,7 @@ from utils.common.samples import Sample
 from utils.common.branches import Branch
 from utils.common.logger import ColoredLogger
 from utils.common.tools import Evaluator
+from utils.common.functor import Functor
 # ========= type hinting
 from typing import Optional, Union, Type, TypeVar
 from beartype.typing import List, Callable, Dict
@@ -78,48 +79,45 @@ class RegBin(_Binning):
         self.nbins = nbins
         super(RegBin, self).__init__(np.linspace(self.min, self.max,self.nbins), axis = axis)
 
-class _ObservableBuilder(object):
+class _ObservableBuilder(Functor):
     TObservableBuilder = TypeVar("TObservableBuilder", bound="_ObservableBuilder")
     
     @beartype
-    def __init__(self, func: Callable, args: List[Union[str, int, float, Dict, None]], *, lit_str_arg: List[str] = [], reqvars: Optional[List[str]] = None):
-        self._func = func
-        self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
-        self._args = args
-        # This should hold the awkward array name to variable mapping
-        # so that the fields in the string can be retrieved from the 
-        # variable. Will be set at runtime (e.g. {"data": data})
-        self._vardict = {}
-        self.req_vars = self._args if reqvars is None else reqvars
+    def __init__(self, *args, **kwargs):
+        super(_ObservableBuilder, self).__init__(*args, **kwargs)
+        # self._func = func
+        # self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
+        # self._args = args
+        # # This should hold the awkward array name to variable mapping
+        # # so that the fields in the string can be retrieved from the 
+        # # variable. Will be set at runtime (e.g. {"data": data})
+        # self._vardict = {}
+        # self.req_vars = self._args if reqvars is None else reqvars
     
-    @classmethod
-    @beartype
-    def fromStr(cls, string_op: str, *, vardict: Dict = {}) -> TObservableBuilder:
+    # @classmethod
+    # @beartype
+    # def fromStr(cls, string_op: str, *, vardict: Dict = {}) -> TObservableBuilder:
         
-        def _eval(string, vardict):
-            return Evaluator(**vardict).evaluate(string)
+    #     def _eval(string, vardict):
+    #         return Evaluator(**vardict).evaluate(string)
         
-        return cls( _eval, [string_op, vardict], lit_str_arg = [string_op], reqvars = Evaluator().get_names(string_op))
+    #     return cls( _eval, [string_op, vardict], lit_str_arg = [string_op], reqvars = Evaluator().get_names(string_op))
     
-    @property
-    def func(self) -> Callable:
-        return self._func
-    @property
-    def argtypes(self) ->   List[Union[str, int, float, Dict, None, Branch]]:
-        return self._argtypes
-    @property
-    def args(self) ->  List[Union[str, int, float, Dict, None]]:
-        return self._args
-    @property
-    def name(self) -> str:
-        return self._name
-    @property
-    def vardict(self) -> str:
-        return self._vardict
-    
-    @vardict.setter
-    def vardict(self, thedict: Dict):
-        self._vardict = thedict
+    # @property
+    # def func(self) -> Callable:
+    #     return self._func
+    # @property
+    # def argtypes(self) ->   List[Union[str, int, float, Dict, None, Branch]]:
+    #     return self._argtypes
+    # @property
+    # def args(self) ->  List[Union[str, int, float, Dict, None]]:
+    #     return self._args
+    # @property
+    # def name(self) -> str:
+    #     return self._name
+    # @property
+    # def vardict(self) -> str:
+    #     return self._vardict
     
     def build(self, data):
         return True
@@ -237,7 +235,6 @@ class Region(object):
                 exclude_samples:  Optional[List[str]] = None, 
                 observables: Optional[List[Observable]] = None,
                 exclude_observables:  Optional[List[str]] = None,
-
                 **kwargs):
         
         self._name = name
@@ -319,11 +316,6 @@ class _Systematic(object):
         up_or_down =  (self.up is not None) or (self.down is not None)
         if not up_or_down:  logger.error(f"Systematic {self.name}: Must provide either an up or down templates")
         if up_or_down and not up_and_down and not self.symmetrize:   logger.warning(f"Systematic {self.name}: Given one-side template but not symmetrising")   
-        # if up_or_down  and not up_and_down and self.symmetrize:
-        #     if (self.up is not None) and (self.down is None):
-        #         self.down = self.up ## Need more rigirous symm
-        #     elif (self.up is None) and (self.down is not None):
-        #         self.up = self.down ## Need more rigirous symm
 
         self.samples = samples
         self.excluded_samples = exclude_samples
@@ -337,7 +329,9 @@ class _Systematic(object):
             logger.error(f"Systematic {self.name} has invalid type {self.type}. Options are shape, norm and shapenorm")
         
 class WeightSyst(_Systematic):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(WeightSyst, self).__init__(*args, **kwargs)
+
 class NTupSys(_Systematic):
     # Up and down can be lists!!!! 
     def __init__(self, *args, **kwargs):
@@ -351,7 +345,7 @@ class TreeSys(_Systematic):
 
 class OverallSys(_Systematic):
     def __init__(self, name, **kwargs):
-        super(OverallSys, self).__init__(*name, "norm", **kwargs)
+        super(OverallSys, self).__init__(name, "norm", **kwargs)
 
 # Try to be smart -- dont read again if you will just apply a weight 
 

@@ -1,27 +1,29 @@
+from utils.common.tools import Evaluator
+from utils.common.functor import Functor
+# ========= type hinting
+from typing import Optional, Union, Type, TypeVar
+from beartype.typing import List, Callable, Dict
+from beartype import beartype
 
-class Selection(object):
-    def __init__(self, func, args, label = None):
-        self._func = func
-        self._args = args
-        self._label = label # to print on plots
-    
-    @classmethod
-    def fromStr(cls, string_op, label = None, *, vardict = {}):
-        
-        def _eval(string, vardict):
-            return ev.Evaluator(vardict).evaluate(string)
-        
-        return cls(_eval, [string_op, vardict], label = label)
+class Selection(Functor):
 
-    @property
-    def args(self):
-        return self._args
-    @property
-    def func(self):
-        return self._func
-    @property
-    def label(self):
-        return self._label
+    def __init__(self, *args, **kwargs):
+        super(Selection, self).__init__(*args, **kwargs)
+        self._label = kwargs.get("label", None) # to print on plots
+        #self._func = func
+        #self._args = args
+        #self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
+       
+        # self._vardict = {}
+        # self.req_vars = self._args if reqvars is None else reqvars
+    # @classmethod
+    # def fromStr(cls, string_op, label = None, *, vardict = {}):
+        
+    #     def _eval(string, vardict):
+    #         return Evaluator(**vardict).evaluate(string)
+        
+    #     return cls(_eval, [string_op, vardict], label = label, lit_str_arg = [string_op], reqvars = Evaluator().get_names(string_op))
+
 
     def combined_label(self):
         combine_cuts = ''

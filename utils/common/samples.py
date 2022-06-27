@@ -17,6 +17,10 @@ class Sample:
     @property
     def name(self: "Sample")-> str :
         return self._name
+    
+    @property
+    def sel(self: "Sample")-> str :
+        return self.selec
 
     @property
     def branches(self: "Sample")->Dict[str, List["Branch"]] :

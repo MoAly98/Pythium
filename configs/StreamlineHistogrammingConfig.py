@@ -58,6 +58,7 @@ regions = [
             Region(name = 'CR', selection = control_region),
           ]
 
+# Allow systematic up/down to take a function or string computation with overrides of __init__. 
 systematics = [
                 TreeSys("FakeTreeVar", 'shapenorm', up = 'treevar_UP', down = 'treevar_DOWN', ), 
                 NTupSys("FakeNTupVar", 'shapenorm', up = 'alt_sample', 

@@ -4,6 +4,7 @@ from collections import defaultdict
 from pprint import pprint
 import boost_histogram as bh
 import awkward as ak
+import time 
 
 class _TaskManager(object):
     def __init__(self, outdir, method):
@@ -67,8 +68,31 @@ class _TaskManager(object):
     
     @dask.delayed
     def _apply_cut(self, data, xp):
-        # What about overall cuts to apply to all histos?
-        pass
+        new_data = data
+        
+        def get_args(sel):
+            sel.vardict = {rv: data[rv] for rv in sel.req_vars}
+            args = [data[arg] if sel.argtypes[i] == "VAR" else arg for i, arg in enumerate(sel.args)]
+            if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
+                # Then I am a string constructor because no data was retrieved
+                args = [sel.vardict if arg=={} else arg for arg in args]
+            return args
+        
+        
+        # TODO:: What about overall cuts to apply to all histos?
+        # 1st apply overall cuts
+        # then apply sample cuts
+        sample = xp["sample"]
+        region = xp["region"]
+        
+        if sample.sel is not None:
+            new_data = new_data[sample.sel.func(*get_args(sample.sel))]
+
+        # then apply region cuts
+        new_data = new_data[region.sel.func(*get_args(region.sel))]
+        
+        # TODO:: then apply observable cuts
+        return new_data
     
     @dask.delayed
     def _get_var(self, data, xp):
@@ -76,6 +100,19 @@ class _TaskManager(object):
 
     @dask.delayed
     def _get_weights(self, data, xp):
+        observable = xp["observable"]
+        weights = observable.weights
+        
+        systematic = xp["systematic"]
+        if isinstance(systematic, WeightSyst):
+            weights = getattr(systematic, xp["template"])
+            # TODO:: This can be a function. 
+
+        if isinstance(weights, str):
+            weights = data[weights]
+        #TODO:: override default by Weight systematic variation 
+        #TODO:: override default by Region weight 
+        #TODO:: overall weight
         pass
 
     def _build_tree(self, xp_paths_map, xp_vars_map):
@@ -95,16 +132,12 @@ class _TaskManager(object):
             data = self._create_variables(data, xps)
             for xp_info in xps:
                 xp = xp_info[0]
-                #data = self._create_variables(data, xp) ## Or maybe create all new vars first incl ones for cuts
-                data = self._apply_cut(data, xp)
-                var = self._get_var(data, xp)
-                weights = self._get_weights(data, xp)
+                new_data = self._apply_cut(data, xp)
+                var = self._get_var(new_data, xp)
+                weights = self._get_weights(new_data, xp)
 
                 xp_to_hists[xp].append(self._make_histogram(var ,xp))
 
-        # xp_to_merged_data = {}
-        # for xp, data_lst in xp_to_data.items():
-        #     xp_to_merged_data[xp] = self._merge_data(data_lst)
         
         jobs = []
         for xp, data in xp_to_hists.items():
