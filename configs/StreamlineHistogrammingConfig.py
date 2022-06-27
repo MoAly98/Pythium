@@ -2,7 +2,7 @@
 # from utils.histogramming.config import get_sklim_samples
 # from hist.axis import Variable, Regular
 
-from utils.histogramming.objects import Region, Observable, RegBin, VarBin, NTupSys, TreeSys
+from utils.histogramming.objects import Region, Observable, RegBin, VarBin, NTupSyst, TreeSyst, WeightSyst
 from utils.common.selection import Selection
 
 # ===========================================
@@ -32,9 +32,9 @@ for ptag in partons:
     eta = Observable( ptag+'_eta', ptag+'_eta', 
                       binning = RegBin(low=-2.5, high=2.5, nbins = 20), 
                       dataset = 'tth_observables', label = rf'{ptag} $\eta$[GeV]')
-    pt_eta = Observable( ptag+'_pt_eta', ptag+'_pt_eta', 
-                         binning = [RegBin(low=0, high=1000, nbins = 50), RegBin(low=-2.5, high=2.5, nbins = 25, axis= 1)], 
-                         dataset = 'tth_observables' , label = rf'{ptag} $\eta$-$p_T$[GeV]')
+    # pt_eta = Observable( ptag+'_pt_eta', ptag+'_pt_eta', 
+    #                      binning = [RegBin(low=0, high=1000, nbins = 50), RegBin(low=-2.5, high=2.5, nbins = 25, axis= 1)], 
+    #                      dataset = 'tth_observables' , label = rf'{ptag} $\eta$-$p_T$[GeV]')
     pt_sq = Observable.fromFunc( ptag+'_pt_sq',
                                  lambda pt: pt**2, args = [ptag+'_pt'],  
                                  binning = RegBin(low=0, high=10000, nbins = 50), 
@@ -43,7 +43,7 @@ for ptag in partons:
                                 f'{ptag}_pt**3',
                                  binning = RegBin(low=0, high=100000, nbins = 50), 
                                  dataset = 'tth_observables', label = rf'{ptag} $\p^2_T$[GeV]')                                     
-    observables.extend([pt, eta, pt_eta, pt_sq, pt_cube])
+    observables.extend([pt, eta, pt_sq, pt_cube])
 
 # ===========================================
 # ================= Regions =================
@@ -60,10 +60,12 @@ regions = [
 
 # Allow systematic up/down to take a function or string computation with overrides of __init__. 
 systematics = [
-                TreeSys("FakeTreeVar", 'shapenorm', up = 'treevar_UP', down = 'treevar_DOWN', ), 
-                NTupSys("FakeNTupVar", 'shapenorm', up = 'alt_sample', 
+                TreeSyst("FakeTreeVar", 'shapenorm', up = 'treevar_UP', down = 'treevar_DOWN', ), 
+                NTupSyst("FakeNTupVar", 'shapenorm', up = 'alt_sample', 
                         where = "/Users/moaly/Work/phd/pythium/Pythium/tests/sklimming/", 
-                        symmetrize= True)
+                        symmetrize= True),
+                WeightSyst.fromFunc("FakeWeightVarFromFunc", 'shapenorm', up = dict(func=lambda x,y : x/y, args = ['higgs_pt','top_pt']), down = dict(func=lambda x,y : y/x, args = ['higgs_pt','top_pt'])),
+                WeightSyst.fromStr("FakeWeightVarFromStr", 'shapenorm', up = 'higgs_pt/top_pt', down = 'top_pt/higgs_pt'),
                 ]
 
 # observables = {}

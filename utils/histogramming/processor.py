@@ -1,6 +1,6 @@
 from pathlib import Path
 from utils.histogramming.TaskManager import _TaskManager
-from utils.histogramming.objects import Observable, _ObservableBuilder, _Binning, _Systematic, NTupSys, TreeSys, CrossProduct
+from utils.histogramming.objects import Observable, _Binning, _Systematic, NTupSyst, TreeSyst, CrossProduct
 from glob import glob 
 import os
 from collections import defaultdict
@@ -39,7 +39,7 @@ class Processor(object):
 
         task_manager = _TaskManager(hist_folder, input_manager.reader)
         task_tree= task_manager._build_tree(xp_to_paths, xp_to_req_vars)
-        dask.compute(task_tree, scheduler = "synchronous")
+        histograms = dask.compute(*task_tree, scheduler = "synchronous")
 
     
     def cross_product(self, samples, regions, systematics, observables):
@@ -85,7 +85,7 @@ class InputManager(object):
         xp_to_req = defaultdict(list)
         for xp in self.xps:
             sample, region, obs, syst, template = xp
-            if obs.builder is None:   xp_to_req[tuple(xp)] = obs
+            if obs.builder is None:   xp_to_req[xp] = [obs]
             else:   
                 tmp = [Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in obs.builder.req_vars ]
                 xp_to_req[xp] = tmp
@@ -103,14 +103,14 @@ class InputManager(object):
                 obs_dataset = observable.dataset
                 paths = [f"{path}/{sample_name}_*_{obs_dataset}.{self.ext}" for path in self.indirs]
                 if template != 'nom':
-                    if isinstance(systematic, NTupSys):
+                    if isinstance(systematic, NTupSyst):
                         sys_dirs =    getattr(systematic, "where")
                         sys_samples = getattr(systematic, template)
                         if sys_dirs == [None]:
                             paths = [f"{indir}/{s_samp}_*_{obs_dataset}.{self.ext}" for indir in indirs for s_samp in sys_samples]
                         else:
                             paths = [f"{s_dir}/{s_samp}_*_{obs_dataset}.{self.ext}" for s_dir in sys_dirs for s_samp in sys_samples]
-                    elif (isinstance(systematic, TreeSys)):
+                    elif (isinstance(systematic, TreeSyst)):
                         syst_dataset = getattr(systematic, template) 
                         paths = [f"{indir}/{sample_name}_*_{syst_dataset}.{self.ext}" for indir in self.indirs]
 

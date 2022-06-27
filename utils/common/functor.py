@@ -4,6 +4,7 @@ from utils.common.tools import Evaluator
 from typing import Optional, Union, Type, TypeVar
 from beartype.typing import List, Callable, Dict
 from beartype import beartype
+import awkward as ak
 
 class Functor(object):
     def __init__(self, func, args, *, list_str_arg: List[str] = [], reqvars: Optional[List[str]] = None, **kwargs):
@@ -21,6 +22,7 @@ class Functor(object):
         
         return cls(_eval, [string_op, vardict], list_str_arg = [string_op], reqvars = Evaluator().get_names(string_op), label = label)
     
+
     @property
     def args(self):
         return self._args
@@ -40,3 +42,14 @@ class Functor(object):
     @vardict.setter
     def vardict(self, thedict: Dict):
         self._vardict = thedict
+
+
+    def evaluate(self, data):
+        
+        self.vardict = {rv: data[rv] for rv in self.req_vars}
+        args = [data[arg] if self.argtypes[i] == "VAR" else arg for i, arg in enumerate(self.args)]
+        if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
+            # Then I am a string constructor because no data was retrieved
+            args = [self.vardict if arg == {} else arg for arg in args]
+        
+        return self.func(*args)

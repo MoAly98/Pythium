@@ -10,19 +10,6 @@ class Selection(Functor):
     def __init__(self, *args, **kwargs):
         super(Selection, self).__init__(*args, **kwargs)
         self._label = kwargs.get("label", None) # to print on plots
-        #self._func = func
-        #self._args = args
-        #self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
-       
-        # self._vardict = {}
-        # self.req_vars = self._args if reqvars is None else reqvars
-    # @classmethod
-    # def fromStr(cls, string_op, label = None, *, vardict = {}):
-        
-    #     def _eval(string, vardict):
-    #         return Evaluator(**vardict).evaluate(string)
-        
-    #     return cls(_eval, [string_op, vardict], label = label, lit_str_arg = [string_op], reqvars = Evaluator().get_names(string_op))
 
 
     def combined_label(self):

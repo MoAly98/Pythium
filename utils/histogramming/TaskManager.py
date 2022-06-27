@@ -1,10 +1,12 @@
 from utils.common.tools import h5py_to_ak, json_to_ak, parquet_to_ak
+from utils.histogramming.objects import WeightSyst
 import dask
 from collections import defaultdict
 from pprint import pprint
 import boost_histogram as bh
-import awkward as ak
 import time 
+import awkward as ak
+from utils.common.functor import Functor
 
 class _TaskManager(object):
     def __init__(self, outdir, method):
@@ -20,20 +22,20 @@ class _TaskManager(object):
 
     @dask.delayed
     def _get_data(self, inpath, observables):
-        data = self.reader(inpath, list(set([v.name for v in observables])))
-        return data
+        data, _ = self.reader(inpath, list(set([v.name for v in observables])))
+        return data, _
     
     @dask.delayed
     def _merge_data(self, data_lst):
         return ak.concatenate(data_lst)
 
     @dask.delayed
-    def _make_histogram(self, var_data, xp):
+    def _make_histogram(self, var_data, weights, xp):
         observable = xp["observable"]
         axes = observable.axes
         h = bh.Histogram(*axes, storage=bh.storage.Weight())
         ## TODO:: Now to fill we need to do some data rendering
-        #h.fill(var_data, weight = observable.weights)
+        h.fill(var_data, weight = weights)
         
         return h
 
@@ -41,6 +43,7 @@ class _TaskManager(object):
     def _create_variables(self, data, xps):
         
         new_data = data
+
         # Loop through xp observables:
         for xp,_ in xps:
             observable = xp["observable"]
@@ -53,30 +56,30 @@ class _TaskManager(object):
                 if len(set([xp["observable"].name for xp, _ in xps if xp["observable"].builder is not None]).intersection(set(builder.req_vars)))!=0:
                     later.append((xp, None))
                     continue
-                builder.vardict = {rv: data[rv] for rv in builder.req_vars}
-                args = [data[arg] if builder.argtypes[i] == "VAR" else arg for i, arg in enumerate(builder.args)]
-                if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
-                    # Then I am a string constructor because no data was retrieved
-                    args = [builder.vardict if arg=={} else arg for arg in args]
+                # builder.vardict = {rv: data[rv] for rv in builder.req_vars}
+                # args = [data[arg] if builder.argtypes[i] == "VAR" else arg for i, arg in enumerate(builder.args)]
+                # if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
+                #     # Then I am a string constructor because no data was retrieved
+                #     args = [builder.vardict if arg=={} else arg for arg in args]
                 
-                new_data[observable.name] = builder.func(*args)
+                new_data[observable.name] = builder.evaluate(data)
 
         if later != []:
             new_data = _create_variables(new_data, later, )                
-                
+        
         return new_data
     
     @dask.delayed
     def _apply_cut(self, data, xp):
         new_data = data
         
-        def get_args(sel):
-            sel.vardict = {rv: data[rv] for rv in sel.req_vars}
-            args = [data[arg] if sel.argtypes[i] == "VAR" else arg for i, arg in enumerate(sel.args)]
-            if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
-                # Then I am a string constructor because no data was retrieved
-                args = [sel.vardict if arg=={} else arg for arg in args]
-            return args
+        # def get_args(sel):
+        #     sel.vardict = {rv: data[rv] for rv in sel.req_vars}
+        #     args = [data[arg] if sel.argtypes[i] == "VAR" else arg for i, arg in enumerate(sel.args)]
+        #     if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
+        #         # Then I am a string constructor because no data was retrieved
+        #         args = [sel.vardict if arg=={} else arg for arg in args]
+        #     return args
         
         
         # TODO:: What about overall cuts to apply to all histos?
@@ -86,34 +89,53 @@ class _TaskManager(object):
         region = xp["region"]
         
         if sample.sel is not None:
-            new_data = new_data[sample.sel.func(*get_args(sample.sel))]
+            new_data = new_data[sample.sel.evaluate(new_data)]
 
         # then apply region cuts
-        new_data = new_data[region.sel.func(*get_args(region.sel))]
+        new_data = new_data[region.sel.evaluate(new_data)]
         
         # TODO:: then apply observable cuts
+        
         return new_data
     
     @dask.delayed
     def _get_var(self, data, xp):
-        pass
+        observable = xp["observable"]
+
+        var = data[observable.name]
+        return var
 
     @dask.delayed
     def _get_weights(self, data, xp):
-        observable = xp["observable"]
-        weights = observable.weights
         
+        #TODO:: overall weight
+        weights = 1
+        #================ Observable weights 
+        observable = xp["observable"]
+        obs_weights = observable.weights
+        if isinstance(obs_weights, str):
+            obs_weights = data[obs_weights]
+        weights = weights*obs_weights
+        
+        #================ Systematic weights 
         systematic = xp["systematic"]
         if isinstance(systematic, WeightSyst):
-            weights = getattr(systematic, xp["template"])
-            # TODO:: This can be a function. 
+            syst_weights = getattr(systematic, xp["template"])
+            if isinstance(syst_weights, Functor):
+                syst_weights = syst_weights.evaluate(data)
+            elif isinstance(weights, str):
+                syst_weights = data[syst_weights]
+            
+            weights = weights*syst_weights
+       
+        #================ Region weights
+        region = xp["region"]
+        region_weights = region.weights
+        if isinstance(region_weights, str):
+            region_weights = data[region_weights]
+        weights = weights*region_weights
 
-        if isinstance(weights, str):
-            weights = data[weights]
-        #TODO:: override default by Weight systematic variation 
-        #TODO:: override default by Region weight 
-        #TODO:: overall weight
-        pass
+        return weights 
 
     def _build_tree(self, xp_paths_map, xp_vars_map):
 
@@ -136,13 +158,12 @@ class _TaskManager(object):
                 var = self._get_var(new_data, xp)
                 weights = self._get_weights(new_data, xp)
 
-                xp_to_hists[xp].append(self._make_histogram(var ,xp))
+                xp_to_hists[xp].append(self._make_histogram(var, weights,xp))
 
         
         jobs = []
-        for xp, data in xp_to_hists.items():
-            jobs.append(data)
-        
+        for xp, data in xp_to_hists.items():    jobs.append(data)
+
         dask.visualize(jobs, filename=f'{self.outdir}/task_graph.png')
         
         return jobs

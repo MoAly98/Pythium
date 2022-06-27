@@ -79,51 +79,6 @@ class RegBin(_Binning):
         self.nbins = nbins
         super(RegBin, self).__init__(np.linspace(self.min, self.max,self.nbins), axis = axis)
 
-class _ObservableBuilder(Functor):
-    TObservableBuilder = TypeVar("TObservableBuilder", bound="_ObservableBuilder")
-    
-    @beartype
-    def __init__(self, *args, **kwargs):
-        super(_ObservableBuilder, self).__init__(*args, **kwargs)
-        # self._func = func
-        # self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in lit_str_arg) else type(arg) for arg in args]
-        # self._args = args
-        # # This should hold the awkward array name to variable mapping
-        # # so that the fields in the string can be retrieved from the 
-        # # variable. Will be set at runtime (e.g. {"data": data})
-        # self._vardict = {}
-        # self.req_vars = self._args if reqvars is None else reqvars
-    
-    # @classmethod
-    # @beartype
-    # def fromStr(cls, string_op: str, *, vardict: Dict = {}) -> TObservableBuilder:
-        
-    #     def _eval(string, vardict):
-    #         return Evaluator(**vardict).evaluate(string)
-        
-    #     return cls( _eval, [string_op, vardict], lit_str_arg = [string_op], reqvars = Evaluator().get_names(string_op))
-    
-    # @property
-    # def func(self) -> Callable:
-    #     return self._func
-    # @property
-    # def argtypes(self) ->   List[Union[str, int, float, Dict, None, Branch]]:
-    #     return self._argtypes
-    # @property
-    # def args(self) ->  List[Union[str, int, float, Dict, None]]:
-    #     return self._args
-    # @property
-    # def name(self) -> str:
-    #     return self._name
-    # @property
-    # def vardict(self) -> str:
-    #     return self._vardict
-    
-    def build(self, data):
-        return True
-
-
-
 class Observable(object):
     '''
     This class defines an observable that will be retrieved from all samples entering a
@@ -149,7 +104,7 @@ class Observable(object):
     def __init__( self, var: str, name: str, binning: Union[_Binning, List[_Binning]], 
                   dataset: str, label: Optional[str] = '', 
                   samples:Optional[List[str]] = None, 
-                  weights: Union[str, np.ndarray, list[Union[int, float]]] = 1,
+                  weights: Union[str, np.ndarray, list[Union[int, float]]] = 1.,
                   exclude_samples: Optional[List[str]] = None,
                   regions: Optional[List[str]] = None,
                   exclude_regions: Optional[List[str]] = None, *,
@@ -182,7 +137,7 @@ class Observable(object):
         Return: 
             `utils.histogramming.objects.Observable` class instance with an `utils.histogramming.objects.ObservableBuilder`
         '''
-        return cls(name, name, *obs_args, **obs_kwargs, obs_build = _ObservableBuilder(func, args, ) )
+        return cls(name, name, *obs_args, **obs_kwargs, obs_build = Functor(func, args, ) )
 
     
     @classmethod
@@ -197,7 +152,7 @@ class Observable(object):
         Return: 
             `utils.histogramming.objects.Observable` class instance with an `utils.histogramming.objects._ObservableBuilder`
         '''
-        return cls(name, name, *obs_args, **obs_kwargs, obs_build = _ObservableBuilder.fromStr(string_op) )
+        return cls(name, name, *obs_args, **obs_kwargs, obs_build = Functor.fromStr(string_op) )
     
     def get_axes(self):
         axes = []
@@ -249,7 +204,7 @@ class Region(object):
         self._excluded_observables = exclude_observables
 
         kwargs = {k.lower(): v for k, v in kwargs.items()}
-        self.mc_weight = kwargs.get("mcweight", None)
+        self.weights = kwargs.get("weights", 1.)
         
     @property
     def name(self):
@@ -329,21 +284,62 @@ class _Systematic(object):
             logger.error(f"Systematic {self.name} has invalid type {self.type}. Options are shape, norm and shapenorm")
         
 class WeightSyst(_Systematic):
+    TTemplate = Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]
+    TWeightSyst = TypeVar("TWeightSyst", bound="WeightSyst")
+
     def __init__(self, *args, **kwargs):
         super(WeightSyst, self).__init__(*args, **kwargs)
 
-class NTupSys(_Systematic):
+
+    @classmethod
+    @beartype
+    def fromFunc(cls, name: str, shape_or_norm:str, up: TTemplate = {}, down: TTemplate = None  ,  *sys_args, **sys_kwargs) -> TWeightSyst:
+        '''
+        Alternative "constructor" for `utils.histogramming.objects.WeightSyst` class which takes a function and function args 
+        instrad of `var` to compute a new observable from existing data
+        Args:
+            name: The name to be given to the new observable
+            func: The function that defines how the variable should be computed
+            args: The argument to be passed to `func` to compute the observable
+        Return: 
+            `utils.histogramming.objects.WeightSyst` class instance with an `utils.histogramming.functor.Functor`
+        '''
+        if up is not None:   up = Functor(up["func"], up["args"],)
+        if down is not None:  down = Functor(down["func"], down["args"],)
+        
+        return cls(name, shape_or_norm, up, down, *sys_args, **sys_kwargs)
+
+    
+    @classmethod
+    @beartype
+    def fromStr(cls, name: str, shape_or_norm:str, up: str, down: str,  *sys_args, **sys_kwargs) -> TWeightSyst:
+        '''
+        Alternative "constructor" for `utils.histogramming.objects.WeightSyst` class which takes a function and function args 
+        instead of `var` to compute a new weight from existing data
+        Args:
+            name: The name to be given to the new observable
+            string: The string that should be parsed to compute new observable
+        Return: 
+            `utils.histogramming.objects.WeightSyst` class instance with an `utils.common.functor.Functor`
+        '''
+        if up is not None:   up = Functor.fromStr(up)
+        if down is not None:  down = Functor.fromStr(down)
+        return cls(name, shape_or_norm, up, down, *sys_args, **sys_kwargs )
+
+
+
+class NTupSyst(_Systematic):
     # Up and down can be lists!!!! 
     def __init__(self, *args, **kwargs):
-        super(NTupSys, self).__init__(*args, **kwargs)
+        super(NTupSyst, self).__init__(*args, **kwargs)
         self.up = [self.up] if not isinstance(self.up, list) else [self.up]
         self.down = [self.down] if not isinstance(self.down, list) else [self.down]
 
-class TreeSys(_Systematic):
+class TreeSyst(_Systematic):
     def __init__(self, *args, **kwargs):
-        super(TreeSys, self).__init__(*args, **kwargs)
+        super(TreeSyst, self).__init__(*args, **kwargs)
 
-class OverallSys(_Systematic):
+class OverallSyst(_Systematic):
     def __init__(self, name, **kwargs):
         super(OverallSys, self).__init__(name, "norm", **kwargs)
 
