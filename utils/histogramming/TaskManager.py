@@ -38,9 +38,6 @@ class _TaskManager(object):
         observable = xp["observable"]
         axes = observable.axes
         h = bh.Histogram(*axes, storage=bh.storage.Weight())
-        # TODO:: Weight systematics with ndim histograms, dealing with ints/floats 
-        #print(var_data, np.array(var_data) )
-        #weights, var_data = np.broadcast_arrays(np.array(weights), np.array(var_data))
         ## TODO:: Data rendering for masking problems
         var_arrs = []
         for field in var_data.fields:   var_arrs.append(var_data[field])
@@ -127,11 +124,7 @@ class _TaskManager(object):
                 syst_weights = data[syst_weights]
             weights = weights*syst_weights
         
-        # elif isinstance(systematic, WeightSyst) and observable.ndim != 1:
-        #     logger.error("Weight Systematics not yet supported for ndimensional histograms")
             
-            
-       
         #================ Region weights
         region = xp["region"]
         region_weights = region.weights
@@ -199,78 +192,23 @@ def _x_in_y(x, ypos, yneg):
         if re.match(regex, x.name) is not None:  return True
         else:   return False
 
-
-
 def observable_in_region(observable, region):
     def check_region():
-        # if region.observables is None and region.excluded_observables is None:
-        #     return True
-        # elif region.observables is None and region.excluded_observables is not None:
-        #     temp = '(?:% s)' % '|'.join(region.excluded_observables)
-        #     if re.match(temp, observable.name):  return False
-        #     else:   return True 
-        # elif region.observables is not None and region.excluded_observables is None:
-        #     temp = '(?:% s)' % '|'.join(region.observables)
-        #     if re.match(temp, observable.name):  return True
-        #     else:   return False
         return _x_in_y(observable, region.observables, region.excluded_observables)
-    
     def check_obs():
-        # if observable.regions is None and observable.excluded_regions is None:
-        #     return True
-        # elif  observable.regions is None and observable.excluded_regions is not None:
-        #     if region.name in observable.excluded_regions:  return False
-        #     else:   return True 
-        # elif  observable.regions is not None and observable.excluded_regions is None:
-        #     if region.name in  observable.regions:   return True
-        #     else:   return False
         return _x_in_y(region, observable.regions, observable.excluded_regions)
-    
     return check_region() & check_obs()
 
 def sample_in_region(sample, region):
-
-    # if region.samples is None and region.excluded_samples is None:
-    #     return True
-    # elif region.samples is None and region.excluded_samples is not None:
-    #     if sample.name in region.excluded_samples:  return False
-    #     else:   return True 
-    # elif region.samples is not None and region.excluded_samples is None:
-    #     if sample.name in region.samples:   return True
-    #     else:   return False
     return _x_in_y(sample, region.samples, region.excluded_samples )
 
 def sample_in_systematic(sample, systematic):
-    # if systematic.samples is None and systematic.excluded_samples is None:
-    #     return True
-    # elif systematic.samples is None and systematic.excluded_samples is not None:
-    #     if sample.name in systematic.excluded_samples:  return False
-    #     else:   return True 
-    # elif systematic.samples is not None and systematic.excluded_samples is None:
-    #     if sample.name in systematic.samples:   return True
-    #     else:   return False
     return _x_in_y(sample,  systematic.samples, systematic.excluded_samples )
 
 def region_in_systematic(region, systematic):
-    # if systematic.regions is None and systematic.excluded_regions is None:
-    #     return True
-    # elif systematic.regions is None and systematic.excluded_regions is not None:
-    #     if region.name in systematic.excluded_regions:  return False
-    #     else:   return True 
-    # elif systematic.regions is not None and systematic.excluded_regions is None:
-    #     if region.name in systematic.regions:   return True
-    #     else:   return False
     return _x_in_y(region, systematic.regions, systematic.excluded_regions )
 
 def observable_in_systematic(observable, systematic):
-    # if systematic.observables is None and systematic.excluded_observables is None:
-    #     return True
-    # elif systematic.observables is None and systematic.excluded_observables is not None:
-    #     if observable.name in systematic.excluded_observables:  return False
-    #     else:   return True 
-    # elif systematic.observables is not None and systematic.excluded_observables is None:
-    #     if observable.name in systematic.observables:   return True
-    #     else:   return False
     return _x_in_y(observable,  systematic.observables, systematic.excluded_observables )
 
 def template_in_sample(sample, template):

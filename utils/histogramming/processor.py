@@ -7,21 +7,17 @@ from collections import defaultdict
 from pprint import pprint
 import dask
 import boost_histogram as bh
-class Processor(object):
-    
+
+class Processor(object):    
     def __init__(self, config):
         self.cfg = config
 
-    
     def get_input_files(self, sample, observable, systematic, template,):
-        
         indirs = self.cfg["general"]["indir"]
         from_pyth = self.cfg["general"]["frompythium"]
         ext = self.cfg["general"]["informat"]
-           
-    
-    def create(self):
 
+    def create(self):
         #======= Output location of histogram
         hist_folder = Path(self.cfg["general"]["outdir"])
         os.makedirs(hist_folder, exist_ok=True)
@@ -40,28 +36,17 @@ class Processor(object):
         task_manager = _TaskManager(hist_folder, input_manager.reader)
         task_tree= task_manager._build_tree(xp_to_paths, xp_to_req_vars)
         histograms = dask.compute(*task_tree, scheduler = "synchronous")
-        #for h in histograms:
-        #    print(h, '\n')
 
     
     def cross_product(self, samples, regions, systematics, observables):
-
-
         for sample in samples:
-            
             for region in regions:
-                
                 for obs in observables:
-                    
                     for syst in [None]+systematics:
-                       
                         templates: List[Literal["nom", "up", "down"]]
                         if syst is None:    templates = ['nom']
                         else:   templates = ["up","down"]
-                        for template in templates:
-                            
-                            
-                            #print("\n",sample.name, "\n", region.name, "\n", syst, "\n", obs.name, "\n",  template, "\n")
+                        for template in templates:                            
                             h_wanted = _TaskManager.hist_wanted(sample, region, obs, syst, template)
                             if not h_wanted:    continue   
                             
@@ -117,12 +102,6 @@ class InputManager(object):
                         paths = [f"{indir}/{sample_name}_*_{syst_dataset}.{self.ext}" for indir in self.indirs]
 
                 paths = list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ]))
-                if systematic is not None:
-                    pass
-                    #print(sample.name, region.name, observable.name, systematic.name, template, paths)
-                else:
-                    pass
-                    #print(sample.name, region.name, observable.name, None, template, paths)
                 xp_to_paths[xp] = paths
                
             

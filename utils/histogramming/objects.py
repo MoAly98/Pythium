@@ -14,8 +14,10 @@ import numpy as np
 import boost_histogram as bh
 
 class CrossProduct(object):
+    
     def __init__(self, sample, region, obs, syst, template, ):
         self._xp = (sample, region, obs, syst, template)
+    
     def __getitem__(self, item):    
         if item == 'sample':
             return self._xp[0]
@@ -32,6 +34,7 @@ class CrossProduct(object):
             except IndexError:  raise IndexError(f"Index {item} out of range for CrossProduct object")
         else:
             raise TypeError("CrossProduct object can be accessed by integers or one of following keys (sample, region, obserbale, systematic, template)")
+    
     def __iter__(self):
         return iter(self._xp)
 
@@ -47,7 +50,12 @@ class _Binning(object):
             0: x-axis, 1: y-axis. 
     '''
     @beartype
-    def __init__(self, binning: Union[list[float], np.ndarray], axis: Optional[int] = None):
+    def __init__(
+        self, 
+        binning: Union[list[float], np.ndarray], 
+        axis: Optional[int] = None
+    ) -> None:
+
         self.binning = np.array(binning)
         self.axis = axis
 
@@ -56,7 +64,12 @@ class VarBin(_Binning):
     Inherits from :py:class:`utils.histogramming.objects._Binning`
     '''
     @beartype
-    def __init__(self, binning: Union[list[float], np.ndarray], axis: Optional[int] = None):
+    def __init__(
+        self, 
+        binning: Union[list[float], np.ndarray], 
+        axis: Optional[int] = None
+    ) -> None:
+        
         super(VarBin, self).__init__(binning, axis = axis)
     
 class RegBin(_Binning):
@@ -73,7 +86,14 @@ class RegBin(_Binning):
             The number of bins to build within the low and high
     '''
     @beartype
-    def __init__(self, low: Union[float,int], high: Union[float,int], nbins: int, axis: Optional[int] = None):
+    def __init__(
+        self, 
+        low: Union[float,int], 
+        high: Union[float,int], 
+        nbins: int, 
+        axis: Optional[int] = None
+    ) -> None:
+
         self.min = low
         self.max = high
         self.nbins = nbins
@@ -121,23 +141,18 @@ class Observable(object):
         obs_build: Optional[TypeOrListOfTypes[Functor]] = None
     ) -> None :
         
+        # Everything arrays to support ndim operations
         self.var = var if isinstance(var, list) else [var]
         self.binning = binning if isinstance(binning, list) else [binning]
         self.axes = self.get_axes()
         self.weights = weights if isinstance(weights, list) else [weights]*len(self.var)
         if isinstance(weights, (int, float)):   self.weights = weights
-        # self.builder = obs_build if isinstance(obs_build, list) else [obs_build]
-        self.builder = obs_build
-       
         h_attr = [self.var, self.binning, self.axes, self.weights]
         assert all(len(attr) == len(h_attr[0]) for attr in h_attr if (attr != self.weights and weights!=1.))
         self.ndim = len(h_attr[0])
+
+        self.builder = obs_build
         if self.ndim != 1 and self.builder is not None:  logger.error("Building n-dim observables on the fly is not supported")
-        
-        # self.var = var 
-        # self.binning = binning if isinstance(binning, list) else [binning]
-        # self.axes = self.get_axes()
-        # self.weights = weights 
        
         self.name = name
         self.label = label
@@ -174,7 +189,13 @@ class Observable(object):
     
     @classmethod
     @beartype
-    def fromStr(cls, name: str, string_op: str, *obs_args, **obs_kwargs) -> TObservable:
+    def fromStr(
+        cls, name: str, 
+        string_op: str, 
+        *obs_args, 
+        **obs_kwargs
+    ) -> TObservable:
+
         '''
         Alternative "constructor" for `utils.histogramming.objects.Observable` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
@@ -215,14 +236,14 @@ class Region(object):
 
     @beartype
     def __init__(
-                self, name: str, 
-                selection: Selection,
-                title: str = None, 
-                samples: Optional[List[str]] = None, 
-                exclude_samples:  Optional[List[str]] = None, 
-                observables: Optional[List[Observable]] = None,
-                exclude_observables:  Optional[List[str]] = None,
-                **kwargs):
+        self, name: str, 
+        selection: Selection,
+        title: str = None, 
+        samples: Optional[List[str]] = None, 
+        exclude_samples:  Optional[List[str]] = None, 
+        observables: Optional[List[Observable]] = None,
+        exclude_observables:  Optional[List[str]] = None,
+        **kwargs):
         
         self._name = name
         self._title = title if title is not None else name
@@ -241,59 +262,50 @@ class Region(object):
     @property
     def name(self):
         return self._name
-    
-    @name.setter
-    def name(self, val):
-        self._name = val
 
     @property
     def sel(self):
         return self._sel
-    
-    @sel.setter
-    def sel(self, val):
-        self._sel = val
 
     @property
     def observables(self):
         return self._observables
-    
-    @observables.setter
-    def observables(self, val):
-        self._observables = val
 
     @property
     def excluded_observables(self):
         return self._excluded_observables
     
-    @excluded_observables.setter
-    def excluded_observables(self, val):
-        self._excluded_observables = val
-
     @property
     def samples(self):
         return self._samples
     
-    @samples.setter
-    def samples(self, val):
-        self._samples = val
-
     @property
     def excluded_samples(self):
         return self._excluded_samples
     
-    @excluded_samples.setter
-    def excluded_samples(self, val):
-        self._excluded_samples = val
-
+TTemplate = Union[str, Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]]
 class _Systematic(object):
 
-    def __init__(self, name: str, shape_or_norm: str , 
-                up = None, down = None, symmetrize = False, 
-                samples: Optional[List[str]] = None, exclude_samples: Optional[List[str]] = None,
-                regions: Optional[List[str]] = None, exclude_regions: Optional[List[str]] = None,
-                observables: Optional[List[str]]  = None, exclude_observables: Optional[List[str]] = None, 
-                where = None):
+    # Can be a string if it is a branch in data or from a string function
+    # Can be Dict with keys being func and args specifying function (callable) 
+    # and arguments (list) to build templates
+   
+
+    def __init__(
+        self, 
+        name: str, 
+        shape_or_norm: str , 
+        up: TTemplate = None, 
+        down: TTemplate = None, 
+        where: str = None,
+        symmetrize: bool = False, 
+        samples: Optional[List[str]] = None, 
+        exclude_samples: Optional[List[str]] = None,
+        regions: Optional[List[str]] = None, 
+        exclude_regions: Optional[List[str]] = None,
+        observables: Optional[List[str]]  = None, 
+        exclude_observables: Optional[List[str]] = None, 
+    ) -> None:
        
         logger = ColoredLogger()
         self.name = name
@@ -319,7 +331,7 @@ class _Systematic(object):
             logger.error(f"Systematic {self.name} has invalid type {self.type}. Options are shape, norm and shapenorm")
         
 class WeightSyst(_Systematic):
-    TTemplate = Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]
+    
     TWeightSyst = TypeVar("TWeightSyst", bound="WeightSyst")
 
     def __init__(self, *args, **kwargs):
@@ -328,7 +340,16 @@ class WeightSyst(_Systematic):
 
     @classmethod
     @beartype
-    def fromFunc(cls, name: str, shape_or_norm:str, up: TTemplate = {}, down: TTemplate = None  ,  *sys_args, **sys_kwargs) -> TWeightSyst:
+    def fromFunc(
+        cls, 
+        name: str, 
+        shape_or_norm: str, 
+        up: Optional[TTemplate] = None, 
+        down: Optional[TTemplate] = None, 
+        *sys_args, 
+        **sys_kwargs
+    ) -> TWeightSyst:
+        
         '''
         Alternative "constructor" for `utils.histogramming.objects.WeightSyst` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
@@ -347,7 +368,16 @@ class WeightSyst(_Systematic):
     
     @classmethod
     @beartype
-    def fromStr(cls, name: str, shape_or_norm:str, up: str, down: str,  *sys_args, **sys_kwargs) -> TWeightSyst:
+    def fromStr(
+        cls, 
+        name: str, 
+        shape_or_norm: str, 
+        up: Optional[str], 
+        down: Optional[str], 
+        *sys_args, 
+        **sys_kwargs
+    ) -> TWeightSyst:
+
         '''
         Alternative "constructor" for `utils.histogramming.objects.WeightSyst` class which takes a function and function args 
         instead of `var` to compute a new weight from existing data
@@ -362,9 +392,7 @@ class WeightSyst(_Systematic):
         return cls(name, shape_or_norm, up, down, *sys_args, **sys_kwargs )
 
 
-
 class NTupSyst(_Systematic):
-    # Up and down can be lists!!!! 
     def __init__(self, *args, **kwargs):
         super(NTupSyst, self).__init__(*args, **kwargs)
         self.up = [self.up] if not isinstance(self.up, list) else [self.up]
