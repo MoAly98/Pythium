@@ -100,33 +100,64 @@ class Observable(object):
     '''
 
     TObservable = TypeVar("TObservable", bound="Observable")
+    T = TypeVar("T")
+    TypeOrListOfTypes = Union[T, List[T]]
+    ListOrListOfLists = Union[List[T], List[List[T]]]
+    NumbersArray = Union[np.ndarray, List[Union[int, float]]]
+
     @beartype
-    def __init__( self, var: str, name: str, binning: Union[_Binning, List[_Binning]], 
-                  dataset: str, label: Optional[str] = '', 
-                  samples:Optional[List[str]] = None, 
-                  weights: Union[str, np.ndarray, list[Union[int, float]]] = 1.,
-                  exclude_samples: Optional[List[str]] = None,
-                  regions: Optional[List[str]] = None,
-                  exclude_regions: Optional[List[str]] = None, *,
-                  obs_build = None ):
+    def __init__( 
+        self, var: TypeOrListOfTypes[str], 
+        name: str, 
+        binning: TypeOrListOfTypes[_Binning], 
+        dataset: str, 
+        weights: TypeOrListOfTypes[Union[str, NumbersArray]] = 1.,
+        label: Optional[str] = '', 
+        samples: Optional[List[str]] = None, 
+        exclude_samples: Optional[List[str]] = None,
+        regions: Optional[List[str]] = None,
+        exclude_regions: Optional[List[str]] = None, 
+        *,
+        obs_build: Optional[TypeOrListOfTypes[Functor]] = None
+    ) -> None :
         
-        self.var = var
-        self.name = name
+        self.var = var if isinstance(var, list) else [var]
         self.binning = binning if isinstance(binning, list) else [binning]
         self.axes = self.get_axes()
+        self.weights = weights if isinstance(weights, list) else [weights]*len(self.var)
+        if isinstance(weights, (int, float)):   self.weights = weights
+        # self.builder = obs_build if isinstance(obs_build, list) else [obs_build]
+        self.builder = obs_build
+       
+        h_attr = [self.var, self.binning, self.axes, self.weights]
+        assert all(len(attr) == len(h_attr[0]) for attr in h_attr if (attr != self.weights and weights!=1.))
+        self.ndim = len(h_attr[0])
+        if self.ndim != 1 and self.builder is not None:  logger.error("Building n-dim observables on the fly is not supported")
+        
+        # self.var = var 
+        # self.binning = binning if isinstance(binning, list) else [binning]
+        # self.axes = self.get_axes()
+        # self.weights = weights 
+       
+        self.name = name
         self.label = label
         self.dataset = dataset
         self.samples = samples
         self.excluded_samples = exclude_samples
         self.regions = regions 
         self.excluded_regions = exclude_regions
-        self.weights = weights
-        self.builder = obs_build
         self.selection = None # TODO::
     
     @classmethod
     @beartype
-    def fromFunc(cls, name: str, func: Callable, args: List[Union[str, int, float, Dict, None]], *obs_args, **obs_kwargs) -> TObservable:
+    def fromFunc(
+        cls, 
+        var: str, 
+        func: TypeOrListOfTypes[Callable], 
+        args: ListOrListOfLists[Union[str, int, float, Dict]],
+        *obs_args, 
+        **obs_kwargs
+    ) -> TObservable:
         '''
         Alternative "constructor" for `utils.histogramming.objects.Observable` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
@@ -137,7 +168,8 @@ class Observable(object):
         Return: 
             `utils.histogramming.objects.Observable` class instance with an `utils.histogramming.objects.ObservableBuilder`
         '''
-        return cls(name, name, *obs_args, **obs_kwargs, obs_build = Functor(func, args, ) )
+        
+        return cls(var, var, *obs_args, **obs_kwargs, obs_build = Functor(func, args, ) )
 
     
     @classmethod
@@ -260,6 +292,7 @@ class _Systematic(object):
                 up = None, down = None, symmetrize = False, 
                 samples: Optional[List[str]] = None, exclude_samples: Optional[List[str]] = None,
                 regions: Optional[List[str]] = None, exclude_regions: Optional[List[str]] = None,
+                observables: Optional[List[str]]  = None, exclude_observables: Optional[List[str]] = None, 
                 where = None):
        
         logger = ColoredLogger()
@@ -276,6 +309,8 @@ class _Systematic(object):
         self.excluded_samples = exclude_samples
         self.regions = regions
         self.excluded_regions = exclude_regions
+        self.observables =  observables
+        self.excluded_observables = exclude_observables
 
         ## Directory to look for samples -- default used is from general_settings
         self.where = [where] if not isinstance(where, list) else where

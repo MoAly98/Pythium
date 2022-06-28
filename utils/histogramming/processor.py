@@ -40,6 +40,8 @@ class Processor(object):
         task_manager = _TaskManager(hist_folder, input_manager.reader)
         task_tree= task_manager._build_tree(xp_to_paths, xp_to_req_vars)
         histograms = dask.compute(*task_tree, scheduler = "synchronous")
+        #for h in histograms:
+        #    print(h, '\n')
 
     
     def cross_product(self, samples, regions, systematics, observables):

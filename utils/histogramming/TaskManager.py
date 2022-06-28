@@ -7,7 +7,11 @@ import boost_histogram as bh
 import time 
 import awkward as ak
 from utils.common.functor import Functor
+import numpy as np
+import re
+from utils.common.logger import ColoredLogger
 
+logger = ColoredLogger()
 class _TaskManager(object):
     def __init__(self, outdir, method):
         readers = {
@@ -22,7 +26,7 @@ class _TaskManager(object):
 
     @dask.delayed
     def _get_data(self, inpath, observables):
-        data, _ = self.reader(inpath, list(set([v.name for v in observables])))
+        data, _ = self.reader(inpath, list(set([vvar for v in observables for vvar in v.var ])))
         return data, _
     
     @dask.delayed
@@ -34,16 +38,21 @@ class _TaskManager(object):
         observable = xp["observable"]
         axes = observable.axes
         h = bh.Histogram(*axes, storage=bh.storage.Weight())
-        ## TODO:: Now to fill we need to do some data rendering
-        h.fill(var_data, weight = weights)
+        # TODO:: Weight systematics with ndim histograms, dealing with ints/floats 
+        #print(var_data, np.array(var_data) )
+        #weights, var_data = np.broadcast_arrays(np.array(weights), np.array(var_data))
+        ## TODO:: Data rendering for masking problems
+        var_arrs = []
+        for field in var_data.fields:   var_arrs.append(var_data[field])
+        h.fill(*var_arrs, weight = weights)
         
         return h
 
     @dask.delayed
     def _create_variables(self, data, xps):
-        
-        new_data = data
+        # TODO:: Create variables for systematics?
 
+        new_data = data
         # Loop through xp observables:
         for xp,_ in xps:
             observable = xp["observable"]
@@ -56,12 +65,7 @@ class _TaskManager(object):
                 if len(set([xp["observable"].name for xp, _ in xps if xp["observable"].builder is not None]).intersection(set(builder.req_vars)))!=0:
                     later.append((xp, None))
                     continue
-                # builder.vardict = {rv: data[rv] for rv in builder.req_vars}
-                # args = [data[arg] if builder.argtypes[i] == "VAR" else arg for i, arg in enumerate(builder.args)]
-                # if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
-                #     # Then I am a string constructor because no data was retrieved
-                #     args = [builder.vardict if arg=={} else arg for arg in args]
-                
+
                 new_data[observable.name] = builder.evaluate(data)
 
         if later != []:
@@ -71,22 +75,16 @@ class _TaskManager(object):
     
     @dask.delayed
     def _apply_cut(self, data, xp):
+        # FIXME:: Override or combine selection?
         new_data = data
         
-        # def get_args(sel):
-        #     sel.vardict = {rv: data[rv] for rv in sel.req_vars}
-        #     args = [data[arg] if sel.argtypes[i] == "VAR" else arg for i, arg in enumerate(sel.args)]
-        #     if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
-        #         # Then I am a string constructor because no data was retrieved
-        #         args = [sel.vardict if arg=={} else arg for arg in args]
-        #     return args
-        
-        
-        # TODO:: What about overall cuts to apply to all histos?
-        # 1st apply overall cuts
-        # then apply sample cuts
         sample = xp["sample"]
         region = xp["region"]
+        # 1st apply overall cuts
+        # TODO:: What about overall cuts to apply to all histos?
+      
+        # then apply sample cuts
+
         
         if sample.sel is not None:
             new_data = new_data[sample.sel.evaluate(new_data)]
@@ -101,8 +99,10 @@ class _TaskManager(object):
     @dask.delayed
     def _get_var(self, data, xp):
         observable = xp["observable"]
-
-        var = data[observable.name]
+        systematic = xp["systematic"]
+        # TODO:: Variable in systematic ?
+        # TODO:: ndim variabe
+        var = data[observable.var]
         return var
 
     @dask.delayed
@@ -119,14 +119,18 @@ class _TaskManager(object):
         
         #================ Systematic weights 
         systematic = xp["systematic"]
-        if isinstance(systematic, WeightSyst):
+        if isinstance(systematic, WeightSyst):# and observable.ndim == 1:
             syst_weights = getattr(systematic, xp["template"])
             if isinstance(syst_weights, Functor):
                 syst_weights = syst_weights.evaluate(data)
             elif isinstance(weights, str):
                 syst_weights = data[syst_weights]
-            
             weights = weights*syst_weights
+        
+        # elif isinstance(systematic, WeightSyst) and observable.ndim != 1:
+        #     logger.error("Weight Systematics not yet supported for ndimensional histograms")
+            
+            
        
         #================ Region weights
         region = xp["region"]
@@ -134,7 +138,6 @@ class _TaskManager(object):
         if isinstance(region_weights, str):
             region_weights = data[region_weights]
         weights = weights*region_weights
-
         return weights 
 
     def _build_tree(self, xp_paths_map, xp_vars_map):
@@ -179,64 +182,97 @@ class _TaskManager(object):
         make_hist &= observable_in_region(observable, region)
         make_hist &= sample_in_systematic(sample, syst)
         make_hist &= region_in_systematic(region, syst)
+        
+        make_hist &= observable_in_systematic(observable, syst)
         make_hist &= systematic_has_shape(syst)
         if template != "nom":   make_hist &= template_is_symm(syst, template)
         return make_hist
 
+def _x_in_y(x, ypos, yneg):
+    if ypos is None and yneg is None: return True
+    elif ypos is None and yneg is not None:
+        regex = "(" + ")|(".join(yneg) + ")"
+        if re.match(regex, x.name) is not None:  return False
+        else:   return True 
+    elif ypos is not None and yneg is None:
+        regex =  "(" + ")|(".join(ypos) + ")"        
+        if re.match(regex, x.name) is not None:  return True
+        else:   return False
+
+
+
 def observable_in_region(observable, region):
     def check_region():
-        if region.observables is None and region.excluded_observables is None:
-            return True
-        elif region.observables is None and region.excluded_observables is not None:
-            if observable.name in region.excluded_observables:  return False
-            else:   return True 
-        elif region.observables is not None and region.excluded_observables is None:
-            if observable.name in region.observables:   return True
-            else:   return False
+        # if region.observables is None and region.excluded_observables is None:
+        #     return True
+        # elif region.observables is None and region.excluded_observables is not None:
+        #     temp = '(?:% s)' % '|'.join(region.excluded_observables)
+        #     if re.match(temp, observable.name):  return False
+        #     else:   return True 
+        # elif region.observables is not None and region.excluded_observables is None:
+        #     temp = '(?:% s)' % '|'.join(region.observables)
+        #     if re.match(temp, observable.name):  return True
+        #     else:   return False
+        return _x_in_y(observable, region.observables, region.excluded_observables)
     
     def check_obs():
-        if observable.regions is None and observable.excluded_regions is None:
-            return True
-        elif  observable.regions is None and observable.excluded_regions is not None:
-            if region.name in observable.excluded_regions:  return False
-            else:   return True 
-        elif  observable.regions is not None and observable.excluded_regions is None:
-            if region.name in  observable.regions:   return True
-            else:   return False
+        # if observable.regions is None and observable.excluded_regions is None:
+        #     return True
+        # elif  observable.regions is None and observable.excluded_regions is not None:
+        #     if region.name in observable.excluded_regions:  return False
+        #     else:   return True 
+        # elif  observable.regions is not None and observable.excluded_regions is None:
+        #     if region.name in  observable.regions:   return True
+        #     else:   return False
+        return _x_in_y(region, observable.regions, observable.excluded_regions)
     
     return check_region() & check_obs()
 
 def sample_in_region(sample, region):
 
-    if region.samples is None and region.excluded_samples is None:
-        return True
-    elif region.samples is None and region.excluded_samples is not None:
-        if sample.name in region.excluded_samples:  return False
-        else:   return True 
-    elif region.samples is not None and region.excluded_samples is None:
-        if sample.name in region.samples:   return True
-        else:   return False
+    # if region.samples is None and region.excluded_samples is None:
+    #     return True
+    # elif region.samples is None and region.excluded_samples is not None:
+    #     if sample.name in region.excluded_samples:  return False
+    #     else:   return True 
+    # elif region.samples is not None and region.excluded_samples is None:
+    #     if sample.name in region.samples:   return True
+    #     else:   return False
+    return _x_in_y(sample, region.samples, region.excluded_samples )
 
 def sample_in_systematic(sample, systematic):
-    if systematic.samples is None and systematic.excluded_samples is None:
-        return True
-    elif systematic.samples is None and systematic.excluded_samples is not None:
-        if sample.name in systematic.excluded_samples:  return False
-        else:   return True 
-    elif systematic.samples is not None and systematic.excluded_samples is None:
-        if sample.name in systematic.samples:   return True
-        else:   return False
+    # if systematic.samples is None and systematic.excluded_samples is None:
+    #     return True
+    # elif systematic.samples is None and systematic.excluded_samples is not None:
+    #     if sample.name in systematic.excluded_samples:  return False
+    #     else:   return True 
+    # elif systematic.samples is not None and systematic.excluded_samples is None:
+    #     if sample.name in systematic.samples:   return True
+    #     else:   return False
+    return _x_in_y(sample,  systematic.samples, systematic.excluded_samples )
 
 def region_in_systematic(region, systematic):
-    if systematic.regions is None and systematic.excluded_regions is None:
-        return True
-    elif systematic.regions is None and systematic.excluded_regions is not None:
-        if region.name in systematic.excluded_regions:  return False
-        else:   return True 
-    elif systematic.regions is not None and systematic.excluded_regions is None:
-        if region.name in systematic.regions:   return True
-        else:   return False
-    
+    # if systematic.regions is None and systematic.excluded_regions is None:
+    #     return True
+    # elif systematic.regions is None and systematic.excluded_regions is not None:
+    #     if region.name in systematic.excluded_regions:  return False
+    #     else:   return True 
+    # elif systematic.regions is not None and systematic.excluded_regions is None:
+    #     if region.name in systematic.regions:   return True
+    #     else:   return False
+    return _x_in_y(region, systematic.regions, systematic.excluded_regions )
+
+def observable_in_systematic(observable, systematic):
+    # if systematic.observables is None and systematic.excluded_observables is None:
+    #     return True
+    # elif systematic.observables is None and systematic.excluded_observables is not None:
+    #     if observable.name in systematic.excluded_observables:  return False
+    #     else:   return True 
+    # elif systematic.observables is not None and systematic.excluded_observables is None:
+    #     if observable.name in systematic.observables:   return True
+    #     else:   return False
+    return _x_in_y(observable,  systematic.observables, systematic.excluded_observables )
+
 def template_in_sample(sample, template):
     if sample.isdata and template != 'nom': return False
     else:   return True
