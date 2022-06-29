@@ -11,7 +11,7 @@ import numpy as np
 #============== System and Python Imports
 from typing import List, Dict, Tuple
 import glob, os
-import regex as re
+import re
 import time
 import psutil
 import gc
@@ -39,7 +39,7 @@ def decorate_sample_tag(tags:List[str])->List[str]:
     Return:
         a list with decorated elements
     '''
-    return [f'*{tag}*' for tag in tags]
+    return [f'.*{tag}.*' for tag in tags]
 
 
 def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
@@ -52,7 +52,7 @@ def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
         paths: A list of full paths up to sample tags
     '''
     paths = [str(loc)+'/'+tag for tag in tags for loc in locations]
-    dirpaths = [p+'/*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
+    dirpaths = [p+'/.*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
     fpaths = list(set([path  for path in paths for p in glob.glob(path) if not os.path.isdir(p) ]))
     paths = dirpaths+fpaths
 
