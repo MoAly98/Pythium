@@ -23,6 +23,9 @@ class Config(object):
         cfg['general'] = {k.lower(): v for k, v in module.general.items()}
         if not isinstance(cfg['general']['indir'], list):
             cfg['general']['indir'] = [cfg['general']['indir']]
+        if 'samplesel' not in cfg['general']:
+            cfg['general']['samplesel'] = False
+        
         # cfg['client_params'] = parse_client_params(module)
         # cfg['file_list'] = parse_file_list(module)
         # cfg['computation_params'] = parse_computation_params(module)

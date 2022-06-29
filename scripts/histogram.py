@@ -11,5 +11,8 @@ import numpy as np
 cfg_path = '/Users/moaly/Work/phd/pythium/Pythium/configs/StreamlineHistogrammingConfig.py'
 
 cfg = hist.config.Config(cfg_path).process()
-hist.processor.Processor(cfg).create()
+procer = hist.processor.Processor(cfg)
+procer.create()
+hists_dict = procer.run()
+procer.save(hists_dict)
 
