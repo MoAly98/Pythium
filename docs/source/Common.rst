@@ -3,8 +3,6 @@ Common objects
 
 .. automodule:: utils.common.branches
    :members:
-.. automodule:: utils.common.logger
-   :members:
 .. automodule:: utils.common.samples
    :members:
 .. automodule:: utils.common.selection

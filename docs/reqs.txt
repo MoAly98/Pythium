@@ -1,1 +1,13 @@
 sphinx-autodoc-annotation
+numpy
+mplhep
+matplotlib
+uproot4
+awkward1
+h5py
+pandas
+hist
+pathlib
+psutil
+vector
+beartype
