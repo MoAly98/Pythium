@@ -9,3 +9,5 @@ pandas
 hist
 pathlib
 psutil
+vector
+beartype
