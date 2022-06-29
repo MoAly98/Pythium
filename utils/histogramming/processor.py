@@ -10,10 +10,11 @@ import boost_histogram as bh
 import pickle
 
 class Processor(object):    
-    def __init__(self, config):
+    def __init__(self, config, scheduler):
         self.cfg = config
         self.outdir = Path(self.cfg["general"]["outdir"])
         os.makedirs(self.outdir, exist_ok=True)
+        self.scheduler = scheduler
         self.graph = None
         self.xps = None
     
@@ -34,8 +35,8 @@ class Processor(object):
         input_manager =  _InputManager(xp_iter, self.cfg)
         xp_to_req_vars = input_manager.required_variables()
         xp_to_paths = input_manager.required_paths()
-
         task_manager = _TaskManager(input_manager.reader, sample_sel = self.cfg["general"]["samplesel"])
+        
         task_tree, xps = task_manager._build_tree(xp_to_paths, xp_to_req_vars)
         dask.visualize(task_tree, filename=f'{self.outdir}/task_graph.png')
         
@@ -43,7 +44,9 @@ class Processor(object):
         self.xps = xps
 
     def run(self):
-        histograms = dask.compute(*self.graph, scheduler = "synchronous")
+        
+        print(len(self.graph))
+        histograms = dask.compute(*self.graph, scheduler = self.scheduler)
         dd = defaultdict(dict)
         for i, xp in enumerate(self.xps):
             sample, region, obs, syst, template = xp

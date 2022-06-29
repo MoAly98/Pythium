@@ -17,6 +17,7 @@ class CrossProduct(object):
     
     def __init__(self, sample, region, obs, syst, template, ):
         self._xp = (sample, region, obs, syst, template)
+        self.names = (sample.name, region.name, obs.name, syst.name if syst is not None else syst, template)
     
     def __getitem__(self, item):    
         if item == 'sample':

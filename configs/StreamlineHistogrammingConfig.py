@@ -9,7 +9,7 @@ from utils.common.selection import Selection
 # ================= Settings ================
 # ===========================================
 general = {}
-general['OutDir'] = '/Users/moaly/Work/phd/pythium/Pythium/tests/histogramming/histograms/'
+general['OutDir'] = '/Users/moaly/Work/phd/pythium/Pythium/tests/histogramming/histograms_nonsync/'
 general['inDir']  = "/Users/moaly/Work/phd/pythium/Pythium/tests/sklimming/"
 general['inFormat']  = 'parquet'
 general['FromPythium']  = True

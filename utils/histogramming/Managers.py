@@ -120,7 +120,6 @@ class _TaskManager(object):
         var_arrs = []
         for field in var_data.fields:   var_arrs.append(var_data[field])
         h.fill(*var_arrs, weight = weights)
-        
         return h
 
     @dask.delayed
@@ -228,13 +227,13 @@ class _TaskManager(object):
                 new_data = self._apply_cut(data, xp)
                 var = self._get_var(new_data, xp)
                 weights = self._get_weights(new_data, xp)
-
+                # Will have n-histograms from n-paths 
                 xp_to_hists[xp].append(self._make_histogram(var, weights,xp))
 
         
         jobs, xps = [], []
         for xp, data in xp_to_hists.items():    
-            jobs.append(data)
+            jobs.append(dask.delayed(sum)(data)) # sum histograms from different paths
             xps.append(xp)
 
         
