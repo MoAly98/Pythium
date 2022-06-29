@@ -1,6 +1,7 @@
 from pathlib import Path
 from utils.histogramming.TaskManager import _TaskManager
 from utils.histogramming.objects import Observable, _Binning, _Systematic, NTupSyst, TreeSyst, CrossProduct
+from utils.common.functor import Functor
 from glob import glob 
 import os
 from collections import defaultdict
@@ -64,21 +65,36 @@ class InputManager(object):
         self.indirs = cfg["general"]["indir"]
         self.from_pyth = cfg["general"]["frompythium"]
         self.ext = cfg["general"]["informat"]
+        self.sample_sel = cfg["general"]["samplesel"]
         self.reader = read_methods[self.ext]
     
-
     def required_variables(self):
         req_vars: List[Observable] = []
         xp_to_req = defaultdict(list)
         for xp in self.xps:
             sample, region, obs, syst, template = xp
-            if obs.builder is None:   xp_to_req[xp] = [obs]
-            else:   
-                tmp = [Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in obs.builder.req_vars ]
-                xp_to_req[xp] = tmp
-        
-        # TODO: Retrieve more required branches from systematics 
-        # TODO:: Retrieve observables needed for cuts
+            required_variables = []
+            obs_vars, _region_sel_vars, sample_sel_vars, syst_vars = [],[],[],[]
+            
+            if obs.builder is None:   obs_vars = [obs]
+            else:
+                obs_vars = [Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in obs.builder.req_vars ]
+
+            region_sel_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in region.sel.req_vars ] 
+            if self.sample_sel:
+                sample_sel_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in sample.sel.req_vars ]
+            
+            if isinstance(systematic, WeightSyst):
+                template = getattr(systematic, template)
+                if isinstance(template, Functor):
+                    syst_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in template.req_vars ] 
+                else:
+                    syst_vars = [Observable(template, template, obs.binning, obs.dataset)]  
+            
+            required_variables.extend([ obs_vars, region_sel_vars, sample_sel_vars, syst_vars])
+            
+            xp_to_req[xp] = required_variables
+            
         return xp_to_req
 
     def required_paths(self):

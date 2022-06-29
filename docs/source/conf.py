@@ -10,7 +10,7 @@ author = 'Mohamed Aly'
 release = '0.1'
 version = '0.1.0'
 import os,sys
-sys.path.insert(0, os.path.abspath('../../utils/'))
+sys.path.insert(0, os.path.abspath('../../'))
 # -- General configuration
 
 extensions = [

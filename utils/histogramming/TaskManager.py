@@ -79,10 +79,8 @@ class _TaskManager(object):
         region = xp["region"]
         # 1st apply overall cuts
         # TODO:: What about overall cuts to apply to all histos?
-      
         # then apply sample cuts
 
-        
         if sample.sel is not None:
             new_data = new_data[sample.sel.evaluate(new_data)]
 
@@ -98,7 +96,6 @@ class _TaskManager(object):
         observable = xp["observable"]
         systematic = xp["systematic"]
         # TODO:: Variable in systematic ?
-        # TODO:: ndim variabe
         var = data[observable.var]
         return var
 
