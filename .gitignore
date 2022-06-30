@@ -6,6 +6,9 @@ __pycache__/
 # Dask workers
 **/dask-worker-space
 
+# System
+**/.DS_Store
+
 # C extensions
 *.so
 
