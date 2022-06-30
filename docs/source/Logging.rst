@@ -1,5 +1,5 @@
 Logging module
 ===============
 
-.. automodule:: utils.common.logger
+.. automodule:: pythium.common.logger
    :members:

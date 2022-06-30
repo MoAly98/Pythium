@@ -1,13 +1,13 @@
 Common objects
 ===================
 
-.. automodule:: utils.common.branches
+.. automodule:: pythium.common.branches
    :members:
-.. automodule:: utils.common.samples
+.. automodule:: pythium.common.samples
    :members:
-.. automodule:: utils.common.selection
+.. automodule:: pythium.common.selection
    :members:
-.. automodule:: utils.common.tools
+.. automodule:: pythium.common.tools
    :members:
-.. automodule:: utils.common.user_tools
+.. automodule:: pythium.common.user_tools
    :members:

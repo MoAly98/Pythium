@@ -3,7 +3,7 @@ from inspect import getsource
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
-from utils.histogramming.objects import Observable, ObservableBuilder, Binning, RegBin, VarBin
+from pythium.histogramming.objects import Observable, ObservableBuilder, Binning, RegBin, VarBin
 
 observable = Observable("X", "Y", RegBin(low=0, high=1000, nbins = 50), 'nominal_Loose')
 

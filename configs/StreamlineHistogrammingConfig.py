@@ -1,9 +1,13 @@
-# from utils.histogramming.cross_product_backend import *
-# from utils.histogramming.config import get_sklim_samples
+# from pythium.histogramming.cross_product_backend import *
+# from pythium.histogramming.config import get_sklim_samples
 # from hist.axis import Variable, Regular
 
-from utils.histogramming.objects import Region, Observable, RegBin, VarBin, NTupSyst, TreeSyst, WeightSyst
-from utils.common.selection import Selection
+#from pythium.histogramming import *
+#import pythium
+
+from pythium.histogramming.objects import Region, Observable, NTupSyst, TreeSyst, WeightSyst
+from pythium.histogramming.binning import RegBin, VarBin
+from pythium.common.selection import Selection
 
 # ===========================================
 # ================= Settings ================

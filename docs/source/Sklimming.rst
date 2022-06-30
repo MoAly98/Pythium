@@ -1,5 +1,5 @@
 Sklimming Classes module
 ========================
 
-.. automodule:: utils.sklimming
+.. automodule:: pythium.sklimming
    :members:

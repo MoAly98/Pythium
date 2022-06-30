@@ -1,6 +1,6 @@
 ''' We create a Branch class'''
 from typing import Any, Dict, List, Optional, Union, Callable, TypeVar, Type
-from utils.common import logger
+from pythium.common import logger
 import sys
 logger = logger.ColoredLogger()
 

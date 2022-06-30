@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
 from pydoc import importfile
-from utils.common.logger import ColoredLogger
-from utils.common.samples import Sample
-from utils.histogramming.objects import *
+from pythium.common.logger import ColoredLogger
+from pythium.common.samples import Sample
+from pythium.histogramming.objects import *
 import os
 from schema import Schema, And, Use, Optional, SchemaError, Regex
 

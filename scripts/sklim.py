@@ -10,8 +10,8 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 #============ thbbanalysis Imports
-import utils.sklimming as sklim
-from utils.common import tools
+import pythium.sklimming as sklim
+from pythium.common import tools
 #=========== Pythonic Imports 
 import numpy as np
 from argparse import ArgumentParser, ArgumentTypeError

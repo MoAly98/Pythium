@@ -4,9 +4,9 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 #============ Pythium Imports
-import utils.histogramming as hist
-from utils.common import tools
-from utils.common.logger import ColoredLogger
+import pythium.histogramming as hist
+from pythium.common import tools
+from pythium.common.logger import ColoredLogger
 #=========== Pythonic Imports 
 import numpy as np
 import dask

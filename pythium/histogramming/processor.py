@@ -1,8 +1,9 @@
 from pathlib import Path
-from utils.histogramming.Managers import _TaskManager, _InputManager
-from utils.histogramming.objects import Observable, _Binning, NTupSyst, TreeSyst, WeightSyst, CrossProduct
-from utils.common.functor import Functor
-from utils.common.logger import ColoredLogger
+from pythium.histogramming.Managers import _TaskManager, _InputManager
+from pythium.histogramming.objects  import Observable, NTupSyst, TreeSyst, WeightSyst, CrossProduct
+from pythium.histogramming.binning import _Binning
+from pythium.common.functor import Functor
+from pythium.common.logger import ColoredLogger
 import os
 from collections import defaultdict
 from pprint import pprint
