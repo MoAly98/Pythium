@@ -3,37 +3,57 @@ import os,sys
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
-#============ thbbanalysis Imports
+#============ Pythium Imports
 import utils.histogramming as hist
 from utils.common import tools
+from utils.common.logger import ColoredLogger
 #=========== Pythonic Imports 
 import numpy as np
 import dask
 from distributed import Client
 import time
+from argparse import ArgumentParser
 
-cfg_path = '/Users/moaly/Work/phd/pythium/Pythium/configs/StreamlineHistogrammingConfig.py'
+#'/Users/moaly/Work/phd/pythium/Pythium/configs/StreamlineHistogrammingConfig.py'
 
-cfg = hist.config.Config(cfg_path).process()
-if __name__ == '__main__':
-    if not cfg["general"]["dask"]:
-        #dask.config.set({"multiprocessing.context": "fork"})
-        scheduler = "threads"
+_CFG_HELP = 'The full path to the configuration file to process'
+_OUTDIR_HELP = 'Directory to save outputs'
+_SAMPLES_HELP = 'Names of samples to keep'
+_OBSERVABLES_HELP = 'Names of observables to keep'
+_REGIONS_HELP = 'Names of regions to keep'
+_SYSTEMATICS_HELP = 'Names of systematics to keep'
+_EXCLUDE_HELP = 'Names of samples/regions/systematics to drop'
+_SKLIM_HELP = 'Path to sklimming config to retrieve samples from'
+
+def get_args():
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('-c', '--cfg', required=True, help=_CFG_HELP)
+    parser.add_argument('-o', '--outdir',   nargs = '+',  help=_OUTDIR_HELP)
+    parser.add_argument('--samples',        nargs = '+',  help=_SAMPLES_HELP)
+    parser.add_argument('--observables',    nargs = '+',  help=_OBSERVABLES_HELP)
+    parser.add_argument('--regions',        nargs = '+',  help=_REGIONS_HELP)
+    parser.add_argument('--systematics',    nargs = '+',  help=_SYSTEMATICS_HELP)
+    parser.add_argument('--exclude',        nargs = '+',  help=_EXCLUDE_HELP)
+    parser.add_argument('--sklimconfig',                  help = _SKLIM_HELP)
+    return parser.parse_args()
+
+logger = ColoredLogger()
+
+def main():
+    args = get_args()
+    cfg = hist.config.Config(args.cfg).process(args)
+ 
+    if not cfg["general"]["dask"]:  scheduler = "threads" # Processes slower for 360histograms???
     else:
-        client_params = {
-                        "n_workers" : 7,
-                        "memory_limit" : '3GB',
-                        "threads_per_worker" : 1
-                        }
-
-        cl = Client(**client_params)
-        print(f'Client Dashboard: {cl.dashboard_link}')
+        cl = Client(**cfg["general"]["dasksettings"])
+        logger.info(f'Client Dashboard: {cl.dashboard_link}')
         scheduler = cl
 
     procer = hist.processor.Processor(cfg, scheduler)
     procer.create()
     hists_dict = procer.run()
     procer.save(hists_dict)
-    if isinstance(scheduler, Client):
-        cl.close()
+    if isinstance(scheduler, Client):   cl.close()
 
+if __name__ == '__main__':
+    main()

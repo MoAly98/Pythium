@@ -1,6 +1,6 @@
 from pathlib import Path
 from utils.histogramming.Managers import _TaskManager, _InputManager
-from utils.histogramming.objects import Observable, _Binning, _Systematic, NTupSyst, TreeSyst, WeightSyst, CrossProduct
+from utils.histogramming.objects import Observable, _Binning, NTupSyst, TreeSyst, WeightSyst, CrossProduct
 from utils.common.functor import Functor
 import os
 from collections import defaultdict

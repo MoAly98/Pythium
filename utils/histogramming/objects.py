@@ -285,7 +285,7 @@ class Region(object):
         return self._excluded_samples
     
 TTemplate = Union[str, Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]]
-class _Systematic(object):
+class Systematic(object):
 
     # Can be a string if it is a branch in data or from a string function
     # Can be Dict with keys being func and args specifying function (callable) 
@@ -331,7 +331,7 @@ class _Systematic(object):
         if self.type not in ['shape', 'norm', 'shapenorm']:
             logger.error(f"Systematic {self.name} has invalid type {self.type}. Options are shape, norm and shapenorm")
         
-class WeightSyst(_Systematic):
+class WeightSyst(Systematic):
     
     TWeightSyst = TypeVar("TWeightSyst", bound="WeightSyst")
 
@@ -393,17 +393,17 @@ class WeightSyst(_Systematic):
         return cls(name, shape_or_norm, up, down, *sys_args, **sys_kwargs )
 
 
-class NTupSyst(_Systematic):
+class NTupSyst(Systematic):
     def __init__(self, *args, **kwargs):
         super(NTupSyst, self).__init__(*args, **kwargs)
         self.up = [self.up] if not isinstance(self.up, list) else [self.up]
         self.down = [self.down] if not isinstance(self.down, list) else [self.down]
 
-class TreeSyst(_Systematic):
+class TreeSyst(Systematic):
     def __init__(self, *args, **kwargs):
         super(TreeSyst, self).__init__(*args, **kwargs)
 
-class OverallSyst(_Systematic):
+class OverallSyst(Systematic):
     def __init__(self, name, **kwargs):
         super(OverallSys, self).__init__(name, "norm", **kwargs)
 

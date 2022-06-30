@@ -1,5 +1,5 @@
 from utils.common.tools import h5py_to_ak, json_to_ak, parquet_to_ak
-from utils.histogramming.objects import Observable, _Binning, _Systematic, NTupSyst, TreeSyst, WeightSyst, CrossProduct
+from utils.histogramming.objects import Observable, _Binning, NTupSyst, TreeSyst, WeightSyst, CrossProduct
 from glob import glob 
 import dask
 import os
@@ -127,6 +127,7 @@ class _TaskManager(object):
         # TODO:: Create variables for systematics?
 
         new_data = data
+        later = []
         # Loop through xp observables:
         for xp,_ in xps:
             observable = xp["observable"]
@@ -135,7 +136,7 @@ class _TaskManager(object):
             else:
                 # Build the variable according to builder and add it to data
                 # Check if other new observables need to be built first before creating current observable
-                later = []
+                
                 if len(set([xp["observable"].name for xp, _ in xps if xp["observable"].builder is not None]).intersection(set(builder.req_vars)))!=0:
                     later.append((xp, None))
                     continue
