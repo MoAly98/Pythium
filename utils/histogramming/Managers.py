@@ -37,12 +37,10 @@ class _InputManager(object):
             sample, region, obs, systematic, template = xp
             required_variables = []
             obs_vars, _region_sel_vars, sample_sel_vars, syst_vars = [],[],[],[]
-            
-            if obs.builder is None:   obs_vars = [obs]
-            else:
-                obs_vars = [Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in obs.builder.req_vars ]
-
+        
+            obs_vars = [Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in obs.builder.req_vars if reqvar not in [xp["observable"].name for xp in self.xps if xp["observable"].builder.new] ]
             region_sel_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in region.sel.req_vars ] 
+            
             if self.sample_sel:
                 sample_sel_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in sample.sel.req_vars ]
             
@@ -123,6 +121,19 @@ class _TaskManager(object):
         return h
 
     @dask.delayed
+    def sort_xps(self, xps):
+        now, later = [], []
+        for xp, _ in xps:
+            observable = xp["observable"]
+            builder = observable.builder
+            if len(set([crossprod["observable"].name for crossprod, _ in xps if crossprod["observable"].builder.new]).intersection(set(builder.req_vars)))!=0:
+                later.append((xp, None))
+            else:
+                now.append((xp, None))
+        
+        return now+later # in that order
+
+    @dask.delayed
     def _create_variables(self, data, xps):
         # TODO:: Create variables for systematics?
 
@@ -132,21 +143,31 @@ class _TaskManager(object):
         for xp,_ in xps:
             observable = xp["observable"]
             builder = observable.builder
-            if observable.builder is None:  continue
-            else:
-                # Build the variable according to builder and add it to data
-                # Check if other new observables need to be built first before creating current observable
+
+            # # Build the variable according to builder and add it to data
+            # # Check if other new observables need to be built first before creating current observable
+            
+            # print("Observable is : ", observable.name)
+            # print("New stuff   ", set([ crossprod["observable"].name for crossprod, _ in xps if crossprod["observable"].builder.new]))
+            # print("Required   ", set(builder.req_vars))
+           
+            # if len(set([crossprod["observable"].name for crossprod, _ in xps if crossprod["observable"].builder.new]).intersection(set(builder.req_vars)))!=0:
                 
-                if len(set([xp["observable"].name for xp, _ in xps if xp["observable"].builder is not None]).intersection(set(builder.req_vars)))!=0:
-                    later.append((xp, None))
-                    continue
+            #     if set(builder.req_vars).issubset(data.fields): pass
+            #     print(f"I {observable.name} will be done later")
+            #     later.append((xp, None))
+            #     continue
+            # print(f"I {observable.name} am now being done")
+            if observable.name in data.fields:  continue
+            new_data[observable.name] = builder.evaluate(data)
 
-                new_data[observable.name] = builder.evaluate(data)
-
-        if later != []:
-            new_data = _create_variables(new_data, later, )                
+        # print(later)
+        # if later != []:
+        #     print("Doing later")
+        #     new_data = self._create_variables(new_data, later, )  
+        #     print("ok")       
         
-        return new_data
+        return new_data#, later
     
     @dask.delayed
     def _apply_cut(self, data, xp):
@@ -222,7 +243,10 @@ class _TaskManager(object):
         xp_to_hists = defaultdict(list)
         for path, xps in path_to_xp.items():
             data = self._get_data(path,  list(xps[0][1]))[0]
-            data = self._create_variables(data, xps)
+            
+            sorted_xps = self.sort_xps(xps)
+            data = self._create_variables(data, sorted_xps)
+
             for xp_info in xps:
                 xp = xp_info[0]
                 new_data = self._apply_cut(data, xp)

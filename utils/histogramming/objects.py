@@ -143,7 +143,7 @@ class Observable(object):
     ) -> None :
         
         # Everything arrays to support ndim operations
-        self.var = var if isinstance(var, list) else [var]
+        self.var = var if isinstance(var, list) else [var,]
         self.binning = binning if isinstance(binning, list) else [binning]
         self.axes = self.get_axes()
         self.weights = weights if isinstance(weights, list) else [weights]*len(self.var)
@@ -154,6 +154,9 @@ class Observable(object):
 
         self.builder = obs_build
         if self.ndim != 1 and self.builder is not None:  logger.error("Building n-dim observables on the fly is not supported")
+        if self.builder is None:   self.builder = Functor(lambda *args: args, self.var, reqvars= self.var, new = False)
+       
+       
        
         self.name = name
         self.label = label

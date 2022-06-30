@@ -13,6 +13,7 @@ class Functor(object):
         self._argtypes = ["VAR" if (isinstance(arg, str) and arg not in list_str_arg) else type(arg) for arg in args]
         self._vardict = {}
         self.req_vars = self._args if reqvars is None else reqvars
+        self.new = kwargs.get('new', True)
     
     @classmethod
     def fromStr(cls, string_op, label = None, *, vardict = {}):
@@ -48,8 +49,11 @@ class Functor(object):
         
         self.vardict = {rv: data[rv] for rv in self.req_vars}
         args = [data[arg] if self.argtypes[i] == "VAR" else arg for i, arg in enumerate(self.args)]
+
         if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
             # Then I am a string constructor because no data was retrieved
             args = [self.vardict if arg == {} else arg for arg in args]
-        
-        return self.func(*args)
+        if self.new:
+            return self.func(*args)
+        else:
+            return self.func(args)

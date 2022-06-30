@@ -2,6 +2,7 @@ from pathlib import Path
 from utils.histogramming.Managers import _TaskManager, _InputManager
 from utils.histogramming.objects import Observable, _Binning, NTupSyst, TreeSyst, WeightSyst, CrossProduct
 from utils.common.functor import Functor
+from utils.common.logger import ColoredLogger
 import os
 from collections import defaultdict
 from pprint import pprint
@@ -10,6 +11,8 @@ import boost_histogram as bh
 import pickle
 
 class Processor(object):    
+    
+    
     def __init__(self, config, scheduler):
         self.cfg = config
         self.outdir = Path(self.cfg["general"]["outdir"])
@@ -24,6 +27,7 @@ class Processor(object):
         ext = self.cfg["general"]["informat"]
 
     def create(self):
+        logger = ColoredLogger()
         #======= Analysis objects from config 
         samples =  self.cfg["samples"]
         regions = self.cfg["regions"]
@@ -41,11 +45,12 @@ class Processor(object):
         dask.visualize(task_tree, filename=f'{self.outdir}/task_graph.png')
         
         self.graph = task_tree
+        logger.info(f"Number of histograms to produce is {len(self.graph)}")
         self.xps = xps
 
     def run(self):
         
-        print(len(self.graph))
+        
         histograms = dask.compute(*self.graph, scheduler = self.scheduler)
         dd = defaultdict(dict)
         for i, xp in enumerate(self.xps):

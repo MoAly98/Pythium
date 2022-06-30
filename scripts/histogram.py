@@ -43,7 +43,7 @@ def main():
     args = get_args()
     cfg = hist.config.Config(args.cfg).process(args)
  
-    if not cfg["general"]["dask"]:  scheduler = "threads" # Processes slower for 360histograms???
+    if not cfg["general"]["dask"]:  scheduler = "synchronous" # Processes slower for 360histograms???
     else:
         cl = Client(**cfg["general"]["dasksettings"])
         logger.info(f'Client Dashboard: {cl.dashboard_link}')
