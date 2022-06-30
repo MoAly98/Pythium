@@ -53,7 +53,5 @@ class Functor(object):
         if not any(type(arg) == ak.Array for arg in args) and any(arg == {} for arg in args):
             # Then I am a string constructor because no data was retrieved
             args = [self.vardict if arg == {} else arg for arg in args]
-        if self.new:
-            return self.func(*args)
-        else:
-            return self.func(args)
+        if self.new:    return self.func(*args)
+        else:   return self.func(args)

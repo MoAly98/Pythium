@@ -35,7 +35,7 @@ for ptag in partons:
                       binning = RegBin(low=-2.5, high=2.5, nbins = 20), 
                       dataset = 'tth_observables', label = rf'{ptag} $\eta$[GeV]')
 
-    pt_eta = Observable( [ptag+'_pt_sq', ptag+'_eta'], ptag+'_pt_eta', 
+    pt_eta = Observable( [ptag+'_pt', ptag+'_eta'], ptag+'_pt_eta', 
                          binning = [RegBin(low=0, high=1000, nbins = 50), RegBin(low=-2.7, high=2.7, nbins = 25, axis= 1)], 
                          dataset = 'tth_observables' , label = rf'{ptag} $\eta$-$p_T$[GeV]')
 

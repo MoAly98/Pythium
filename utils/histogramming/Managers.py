@@ -122,14 +122,24 @@ class _TaskManager(object):
 
     @dask.delayed
     def sort_xps(self, xps):
+        '''
+        Sort the cross product order so that all new variables that do not depend on other
+        new variables are computed first. This makes the creation of the variables less problematic
+        and avoids need for recursion which is bad practice in dask.delayed() funcitons. 
+        '''
         now, later = [], []
         for xp, _ in xps:
             observable = xp["observable"]
             builder = observable.builder
-            if len(set([crossprod["observable"].name for crossprod, _ in xps if crossprod["observable"].builder.new]).intersection(set(builder.req_vars)))!=0:
+            if len( set(
+                        [ crossprod["observable"].name 
+                          for crossprod, _ in xps 
+                          if crossprod["observable"].builder.new]).intersection(set(builder.req_vars)
+                        )
+                    ) !=0:
+                
                 later.append((xp, None))
-            else:
-                now.append((xp, None))
+            else:   now.append((xp, None))
         
         return now+later # in that order
 
@@ -144,28 +154,9 @@ class _TaskManager(object):
             observable = xp["observable"]
             builder = observable.builder
 
-            # # Build the variable according to builder and add it to data
-            # # Check if other new observables need to be built first before creating current observable
-            
-            # print("Observable is : ", observable.name)
-            # print("New stuff   ", set([ crossprod["observable"].name for crossprod, _ in xps if crossprod["observable"].builder.new]))
-            # print("Required   ", set(builder.req_vars))
-           
-            # if len(set([crossprod["observable"].name for crossprod, _ in xps if crossprod["observable"].builder.new]).intersection(set(builder.req_vars)))!=0:
-                
-            #     if set(builder.req_vars).issubset(data.fields): pass
-            #     print(f"I {observable.name} will be done later")
-            #     later.append((xp, None))
-            #     continue
-            # print(f"I {observable.name} am now being done")
             if observable.name in data.fields:  continue
             new_data[observable.name] = builder.evaluate(data)
-
-        # print(later)
-        # if later != []:
-        #     print("Doing later")
-        #     new_data = self._create_variables(new_data, later, )  
-        #     print("ok")       
+    
         
         return new_data#, later
     
