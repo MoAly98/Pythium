@@ -4,14 +4,54 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pythium"
-authors = [{name = "Mohamed Aly", email = "mohamed.aly@cern.ch"},{name = "Brian Le", email = "brian.le@cern.ch"}]
-dynamic = ["version", "description"]
+description = "An alternative analysis workflow that skips ROOT"
+readme = "README.md"
+authors = [{name = "Mohamed Aly", email = "mohamed.aly@cern.ch"},
+           {name = "Brian Le", email = "brian.le@cern.ch"},
+           {name = "Joshua Winter", email = "joshua.krystin.winter@cern.ch"},
+           {name = "Konrad Malirz", email = "konrad.malirz@cern.ch"},
+           {name = "Flavio Ryu", email = "flavio.ryu@cern.ch"}]
+maintainers = [{name = "Mohamed Aly", email = "mohamed.aly@cern.ch"},
+           {name = "Brian Le", email = "brian.le@cern.ch"},
+           {name = "Joshua Winter", email = "joshua.krystin.winter@cern.ch"}]
+requires-python = ">=3.7"
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Typing :: Typed"
+]
+
+dynamic = ["version"]
 dependencies = ["boost_histogram>=1.0.2",
                 "awkward>=1.0",
-                "uproot>=4.0",
+                "uproot4>=4.0",
                 "mplhep",
                 "numpy",
                 "h5py==3.6.0",
                 "psutil",
-                "beartype"
+                "beartype",
+                "schema",
+                "dask",
+                "distributed",
+                "vector", 
+                "graphviz"
                 ]
+
+[project.urls]
+homepage =  "https://github.com/MoAly98/Pythium/tree/main"
+documentation = "https://pythium.readthedocs.io/en/main/"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pythium"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pythium.__version__"}
+
+[project.scripts]
+sklim = "pythium.scripts.sklim:main"
+hist = "pythium.scripts.histogram:main"

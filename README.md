@@ -1,4 +1,4 @@
-# Pythium <img src="https://github.com/MoAly98/Pythium/blob/main/misc/pythium_logo.png" width="50">
+# Pythium <img src="https://github.com/MoAly98/Pythium/blob/main/misc/pythium_logo.png?raw=true" width="50">
 
 A ROOT Killa'
 
