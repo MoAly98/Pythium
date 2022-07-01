@@ -23,7 +23,7 @@ class _Binning(object):
     @beartype
     def __init__(
         self, 
-        binning: Union[list[float], np.ndarray], 
+        binning: Union[List[float], np.ndarray], 
         axis: Optional[int] = None
     ) -> None:
 
@@ -37,7 +37,7 @@ class VarBin(_Binning):
     @beartype
     def __init__(
         self, 
-        binning: Union[list[float], np.ndarray], 
+        binning: Union[List[float], np.ndarray], 
         axis: Optional[int] = None
     ) -> None:
         
