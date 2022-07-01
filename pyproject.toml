@@ -53,5 +53,5 @@ include = ["pythium"]
 version = {attr = "pythium.__version__"}
 
 [project.scripts]
-sklim = "pythium.scripts.sklim:main"
-hist = "pythium.scripts.histogram:main"
+pythium-sklim = "pythium.scripts.sklim:main"
+pythium-hist = "pythium.scripts.histogram:main"
