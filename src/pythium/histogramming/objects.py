@@ -1,3 +1,11 @@
+'''
+This module defines the API with the so-called *Analysis objects*. These are objects
+that an analyser would interact with when doing their analysis. 
+They are observables, regions, systematics. The user interacts
+with :py:class:`pythium.histogramming.objects.Observable` , :py:class:`pythium.histogramming.objects.Region` and 
+:py:class:`pythium.histogramming.objects.Systematic` sub-classes through the configuration file. 
+'''
+
 # ========= pythium tools
 from pythium.common.selection import Selection
 from pythium.common.samples import Sample
@@ -14,10 +22,7 @@ from beartype import beartype
 import numpy as np
 import boost_histogram as bh
 
-'''
-The `pythium.histogramming.objects.CrossProduct` class is used in the back-end to improve
-quality of code. 
-'''
+
 
 class CrossProduct(object):
     
@@ -45,13 +50,7 @@ class CrossProduct(object):
     def __iter__(self):
         return iter(self._xp)
 
-'''
-This module defines the API with the so-called *Analysis objects*. These are objects
-that an analyser would interact with when doing their analysis. 
-They are observables, regions, systematics. The user interacts
-with `pythium.histogramming.objects.Observable` , `pythium.histogramming.objects.Region` and 
-`pythium.histogramming.objects.Systematic` sub-classes through the configuration file. 
-'''
+
 
 class Observable(object):
     '''
@@ -59,17 +58,17 @@ class Observable(object):
     given region, and constructed with the given binning. 
     
     Attributes:
-        name: 
+        name (str): 
             The name given to the observable 
-        var:
+        var (str):
             The name of the observable in the input file
-        binning:
+        binning (:py:class:`pythium.histogramming.binning._Binning`):
             The chosen binning for this observable
-        dataset:
+        dataset (str):
             The equivalent of a TTree in ROOT files. It is the parent group for
             the observable in the input file (e.g. nominal tree in a ROOT file)
-        obs_build:
-            An instance of :py:class:`pythium.histogramming.objects._ObservableBuilder` which defines
+        obs_build ( :py:class:`pythium.common.functor.Functor` ):
+            An instance of :py:class:`pythium.common.functor.Functor` which defines
             how to build the observable from existing data
     '''
 
@@ -131,14 +130,16 @@ class Observable(object):
         **obs_kwargs
     ) -> TObservable:
         '''
-        Alternative "constructor" for `pythium.histogramming.objects.Observable` class which takes a function and function args 
+        Alternative "constructor" for :py:class:`pythium.histogramming.objects.Observable` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
+
         Args:
-            name: The name to be given to the new observable
+            var: The name to be given to the new observable
             func: The function that defines how the variable should be computed
             args: The argument to be passed to `func` to compute the observable
+
         Return: 
-            `pythium.histogramming.objects.Observable` class instance with an `pythium.histogramming.objects.ObservableBuilder`
+            :py:class:`pythium.histogramming.objects.Observable` class instance with an :py:class:`pythium.histogramming.objects.ObservableBuilder`
         '''
         
         return cls(var, var, *obs_args, **obs_kwargs, obs_build = Functor(func, args, ) )
@@ -154,13 +155,15 @@ class Observable(object):
     ) -> TObservable:
 
         '''
-        Alternative "constructor" for `pythium.histogramming.objects.Observable` class which takes a function and function args 
+        Alternative "constructor" for :py:class:`pythium.histogramming.objects.Observable` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
+
         Args:
             name: The name to be given to the new observable
             string: The string that should be parsed to compute new observable
+
         Return: 
-            `pythium.histogramming.objects.Observable` class instance with an `pythium.histogramming.objects._ObservableBuilder`
+            :py:class:`pythium.histogramming.objects.Observable` class instance with an :py:class:`pythium.histogramming.objects._ObservableBuilder`
         '''
         return cls(name, name, *obs_args, **obs_kwargs, obs_build = Functor.fromStr(string_op) )
     
@@ -177,6 +180,7 @@ class Observable(object):
 class Region(object):
     '''
     This class defines a phase-space region object that the user will need
+    
     Attributes:
         name: 
             The name given to the region 

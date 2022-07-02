@@ -1,4 +1,4 @@
-Common objects
+common modules
 ===================
 
 .. automodule:: pythium.common.branches

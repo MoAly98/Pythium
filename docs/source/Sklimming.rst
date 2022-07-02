@@ -1,4 +1,4 @@
-Sklimming Classes module
+Sklimming Modules
 ========================
 
 .. automodule:: pythium.sklimming
