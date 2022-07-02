@@ -1,7 +1,6 @@
 
 # Configuration file for the Sphinx documentation builder.
 import os,sys
-import sphinx_bootstrap_theme
 sys.path.insert(0, os.path.abspath('../../src/'))
 # -- Project information
 
