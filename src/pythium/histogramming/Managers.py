@@ -1,5 +1,6 @@
-from utils.common.tools import h5py_to_ak, json_to_ak, parquet_to_ak
-from utils.histogramming.objects import Observable, _Binning, NTupSyst, TreeSyst, WeightSyst, CrossProduct
+from pythium.common.tools import h5py_to_ak, json_to_ak, parquet_to_ak
+from pythium.histogramming.objects  import Observable, NTupSyst, TreeSyst, WeightSyst, CrossProduct
+from pythium.histogramming.binning import _Binning
 from glob import glob 
 import dask
 import os
@@ -8,10 +9,10 @@ from pprint import pprint
 import boost_histogram as bh
 import time 
 import awkward as ak
-from utils.common.functor import Functor
+from pythium.common.functor import Functor
 import numpy as np
 import re
-from utils.common.logger import ColoredLogger
+from pythium.common.logger import ColoredLogger
 
 logger = ColoredLogger()
 

@@ -4,8 +4,8 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
 import pickle
-import utils.histogramming.storage_functions as sf
-import utils.histogramming.config as config
+import pythium.histogramming.storage_functions as sf
+import pythium.histogramming.config as config
 from argparse import ArgumentParser
 
 _CFG_HELP = 'The full path to the histogramming configuration file'

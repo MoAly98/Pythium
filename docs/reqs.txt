@@ -1,4 +1,5 @@
 sphinx-autodoc-annotation
+sphinx_autodoc_typehints
 numpy
 mplhep
 matplotlib
@@ -11,3 +12,7 @@ pathlib
 psutil
 vector
 beartype
+dask
+distributed
+graphviz
+schema

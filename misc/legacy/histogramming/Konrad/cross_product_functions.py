@@ -16,10 +16,10 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
-import utils.histogramming.storage_functions as sf
-import utils.histogramming.cross_product_backend as back
-import utils.histogramming.config as config
-from utils.common.tools import h5py_to_ak 
+import pythium.histogramming.storage_functions as sf
+import pythium.histogramming.cross_product_backend as back
+import pythium.histogramming.config as config
+from pythium.common.tools import h5py_to_ak 
 
 # for region:
 #   for samples: (files of slimmed data)

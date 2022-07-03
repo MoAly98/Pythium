@@ -1,10 +1,19 @@
+'''
+This module defines the API with the so-called *Analysis objects*. These are objects
+that an analyser would interact with when doing their analysis. 
+They are observables, regions, systematics. The user interacts
+with :py:class:`pythium.histogramming.objects.Observable` , :py:class:`pythium.histogramming.objects.Region` and 
+:py:class:`pythium.histogramming.objects.Systematic` sub-classes through the configuration file. 
+'''
+
 # ========= pythium tools
-from utils.common.selection import Selection
-from utils.common.samples import Sample
-from utils.common.branches import Branch
-from utils.common.logger import ColoredLogger
-from utils.common.tools import Evaluator
-from utils.common.functor import Functor
+from pythium.common.selection import Selection
+from pythium.common.samples import Sample
+from pythium.common.branches import Branch
+from pythium.common.logger import ColoredLogger
+from pythium.common.tools import Evaluator
+from pythium.common.functor import Functor
+from pythium.histogramming.binning import _Binning, RegBin, VarBin
 # ========= type hinting
 from typing import Optional, Union, Type, TypeVar
 from beartype.typing import List, Callable, Dict
@@ -12,6 +21,8 @@ from beartype import beartype
 # ========= scikit
 import numpy as np
 import boost_histogram as bh
+
+
 
 class CrossProduct(object):
     
@@ -39,66 +50,7 @@ class CrossProduct(object):
     def __iter__(self):
         return iter(self._xp)
 
-class _Binning(object):
-    '''
-    The parent binning class
 
-    Attributes:
-        binning: 
-            The `np.array` that defines the bin edges
-        axis:
-            The number of the axis defined by this binning.
-            0: x-axis, 1: y-axis. 
-    '''
-    @beartype
-    def __init__(
-        self, 
-        binning: Union[list[float], np.ndarray], 
-        axis: Optional[int] = None
-    ) -> None:
-
-        self.binning = np.array(binning)
-        self.axis = axis
-
-class VarBin(_Binning):
-    '''
-    Inherits from :py:class:`utils.histogramming.objects._Binning`
-    '''
-    @beartype
-    def __init__(
-        self, 
-        binning: Union[list[float], np.ndarray], 
-        axis: Optional[int] = None
-    ) -> None:
-        
-        super(VarBin, self).__init__(binning, axis = axis)
-    
-class RegBin(_Binning):
-    '''
-    Inherits from :py:class:`utils.histogramming.objects._Binning` but constructs
-    uniform binning between given limits
-    
-    Attributes:
-        low: 
-            The lower edge of histogram 
-        high:
-            The higher edge of histogram 
-        nbins:
-            The number of bins to build within the low and high
-    '''
-    @beartype
-    def __init__(
-        self, 
-        low: Union[float,int], 
-        high: Union[float,int], 
-        nbins: int, 
-        axis: Optional[int] = None
-    ) -> None:
-
-        self.min = low
-        self.max = high
-        self.nbins = nbins
-        super(RegBin, self).__init__(np.linspace(self.min, self.max,self.nbins), axis = axis)
 
 class Observable(object):
     '''
@@ -106,17 +58,17 @@ class Observable(object):
     given region, and constructed with the given binning. 
     
     Attributes:
-        name: 
+        name (str): 
             The name given to the observable 
-        var:
+        var (str):
             The name of the observable in the input file
-        binning:
+        binning (:py:class:`pythium.histogramming.binning._Binning`):
             The chosen binning for this observable
-        dataset:
+        dataset (str):
             The equivalent of a TTree in ROOT files. It is the parent group for
             the observable in the input file (e.g. nominal tree in a ROOT file)
-        obs_build:
-            An instance of :py:class:`utils.histogramming.objects._ObservableBuilder` which defines
+        obs_build ( :py:class:`pythium.common.functor.Functor` ):
+            An instance of :py:class:`pythium.common.functor.Functor` which defines
             how to build the observable from existing data
     '''
 
@@ -178,14 +130,16 @@ class Observable(object):
         **obs_kwargs
     ) -> TObservable:
         '''
-        Alternative "constructor" for `utils.histogramming.objects.Observable` class which takes a function and function args 
+        Alternative "constructor" for :py:class:`pythium.histogramming.objects.Observable` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
+
         Args:
-            name: The name to be given to the new observable
+            var: The name to be given to the new observable
             func: The function that defines how the variable should be computed
             args: The argument to be passed to `func` to compute the observable
+
         Return: 
-            `utils.histogramming.objects.Observable` class instance with an `utils.histogramming.objects.ObservableBuilder`
+            :py:class:`pythium.histogramming.objects.Observable` class instance with an :py:class:`pythium.histogramming.objects.ObservableBuilder`
         '''
         
         return cls(var, var, *obs_args, **obs_kwargs, obs_build = Functor(func, args, ) )
@@ -201,13 +155,15 @@ class Observable(object):
     ) -> TObservable:
 
         '''
-        Alternative "constructor" for `utils.histogramming.objects.Observable` class which takes a function and function args 
+        Alternative "constructor" for :py:class:`pythium.histogramming.objects.Observable` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
+
         Args:
             name: The name to be given to the new observable
             string: The string that should be parsed to compute new observable
+
         Return: 
-            `utils.histogramming.objects.Observable` class instance with an `utils.histogramming.objects._ObservableBuilder`
+            :py:class:`pythium.histogramming.objects.Observable` class instance with an :py:class:`pythium.histogramming.objects._ObservableBuilder`
         '''
         return cls(name, name, *obs_args, **obs_kwargs, obs_build = Functor.fromStr(string_op) )
     
@@ -224,17 +180,18 @@ class Observable(object):
 class Region(object):
     '''
     This class defines a phase-space region object that the user will need
+    
     Attributes:
         name: 
             The name given to the region 
         selection:
-            The :py:class:`utils.common.selection.Selection` instance to be evaluated for all
+            The :py:class:`pythium.common.selection.Selection` instance to be evaluated for all
             samples that enter this region 
         samples:
-            The list of :py:class:`utils.common.samples.Sample` instances that should be included
+            The list of :py:class:`pythium.common.samples.Sample` instances that should be included
             in this region 
         exclude:
-            The list of :py:class:`utils.common.samples.Sample` instances that should be excluded
+            The list of :py:class:`pythium.common.samples.Sample` instances that should be excluded
             from this region
     '''
 
@@ -286,7 +243,7 @@ class Region(object):
     @property
     def excluded_samples(self):
         return self._excluded_samples
-    
+
 TTemplate = Union[str, Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]]
 class Systematic(object):
 
@@ -294,7 +251,6 @@ class Systematic(object):
     # Can be Dict with keys being func and args specifying function (callable) 
     # and arguments (list) to build templates
    
-
     def __init__(
         self, 
         name: str, 
@@ -355,14 +311,14 @@ class WeightSyst(Systematic):
     ) -> TWeightSyst:
         
         '''
-        Alternative "constructor" for `utils.histogramming.objects.WeightSyst` class which takes a function and function args 
+        Alternative "constructor" for `pythium.histogramming.objects.WeightSyst` class which takes a function and function args 
         instrad of `var` to compute a new observable from existing data
         Args:
             name: The name to be given to the new observable
             func: The function that defines how the variable should be computed
             args: The argument to be passed to `func` to compute the observable
         Return: 
-            `utils.histogramming.objects.WeightSyst` class instance with an `utils.histogramming.functor.Functor`
+            `pythium.histogramming.objects.WeightSyst` class instance with an `pythium.histogramming.functor.Functor`
         '''
         if up is not None:   up = Functor(up["func"], up["args"],)
         if down is not None:  down = Functor(down["func"], down["args"],)
@@ -383,13 +339,13 @@ class WeightSyst(Systematic):
     ) -> TWeightSyst:
 
         '''
-        Alternative "constructor" for `utils.histogramming.objects.WeightSyst` class which takes a function and function args 
+        Alternative "constructor" for `pythium.histogramming.objects.WeightSyst` class which takes a function and function args 
         instead of `var` to compute a new weight from existing data
         Args:
             name: The name to be given to the new observable
             string: The string that should be parsed to compute new observable
         Return: 
-            `utils.histogramming.objects.WeightSyst` class instance with an `utils.common.functor.Functor`
+            `pythium.histogramming.objects.WeightSyst` class instance with an `pythium.common.functor.Functor`
         '''
         if up is not None:   up = Functor.fromStr(up)
         if down is not None:  down = Functor.fromStr(down)

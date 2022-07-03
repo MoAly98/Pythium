@@ -1,8 +1,8 @@
 import os,sys
-from utils.common.samples import *
-from utils.common.branches import *
-from utils.common.selection import *
-from utils.common.user_tools import *
+from pythium.common.samples import *
+from pythium.common.branches import *
+from pythium.common.selection import *
+from pythium.common.user_tools import *
 import numpy as np
 
 general_settings = {}

@@ -16,11 +16,11 @@ import time
 import psutil
 import gc
 #============ thbbanalysis Imports
-from utils.common.branches import *
-from utils.common.tools import combine_list_of_dicts
+from pythium.common.branches import *
+from pythium.common.tools import combine_list_of_dicts
 #import thbbanalysis.sklimming as sklim
-from utils.sklimming import writer
-from utils.common import tools
+from pythium.sklimming import writer
+from pythium.common import tools
 
 
 

@@ -5,8 +5,8 @@ parentparentdir = os.path.dirname(parentdir)
 
 sys.path.append(parentdir)
 sys.path.append(parentparentdir)
-from utils.histogramming.processor import Processor
-import utils.histogramming as hist
+from pythium.histogramming.processor import Processor
+import pythium.histogramming as hist
 cfg_path = '/Users/moaly/Work/phd/pythium/Pythium/configs/StreamlineHistogrammingConfig.py'
 
 cfg = hist.config.Config(cfg_path).process()

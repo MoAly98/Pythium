@@ -7,10 +7,10 @@ currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 
-import utils.histogramming.cross_product_functions as cross_product
-import utils.histogramming.cross_product_backend as backend
-import utils.histogramming.storage_functions as storage_functions
-import utils.histogramming.config as config
+import pythium.histogramming.cross_product_functions as cross_product
+import pythium.histogramming.cross_product_backend as backend
+import pythium.histogramming.storage_functions as storage_functions
+import pythium.histogramming.config as config
 from argparse import ArgumentParser
 
 _CFG_HELP = 'The full path to the histogramming configuration file'

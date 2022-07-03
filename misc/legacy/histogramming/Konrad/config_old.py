@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
-from utils.histogramming.cross_product_backend import XP_Systematics, XP_Sample
-from utils.common import logger
-from utils.sklimming.config import validate_samples as sklim_validate_samples
+from pythium.histogramming.cross_product_backend import XP_Systematics, XP_Sample
+from pythium.common import logger
+from pythium.sklimming.config import validate_samples as sklim_validate_samples
 from pydoc import importfile
 import types
 import re, os
