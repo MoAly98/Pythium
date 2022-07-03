@@ -63,12 +63,13 @@ pythium-hist -c <sklim-config.py>
 ```
 for histogramming configs. 
 
-# The configuration files 
-## Sklimming 
+# Develeprs Note
 
-## Histogramming 
+If you are developing pythium without downloading it as a package, you will need to add the package directory to your python path. This is because the code lives under `src/`. To do this on Mac/Linux:
 
-## Fitting
+```
+export PYTHONPATH=$PYTHONPATH:<your_path_to_pythium>/src
+```
 
 Under construction!
 
