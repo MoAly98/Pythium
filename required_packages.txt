@@ -1,3 +1,5 @@
+sphinx-autodoc-annotation
+sphinx_autodoc_typehints
 numpy
 mplhep
 matplotlib
@@ -7,6 +9,10 @@ h5py
 pandas
 hist
 pathlib
-pydoc
 psutil
-time
+vector
+beartype
+dask
+distributed
+graphviz
+schema

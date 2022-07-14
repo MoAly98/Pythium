@@ -1,5 +1,5 @@
-from utils.histogramming.cross_product_backend import *
-from utils.histogramming.config import get_sklim_samples
+from pythium.histogramming.cross_product_backend import *
+from pythium.histogramming.config import get_sklim_samples
 from hist.axis import Variable, Regular
 
 #TODO:

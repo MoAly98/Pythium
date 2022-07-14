@@ -1,6 +1,6 @@
-import utils.histogramming.storage_functions as sf
+import pythium.histogramming.storage_functions as sf
 import configs.hist_vars as hist_vars
-from utils.histogramming.cross_product_backend import *
+from pythium.histogramming.cross_product_backend import *
 from hist.axis import Variable, Regular
 from configs.sklim_config import samples as sklim_samples
 
