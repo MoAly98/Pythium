@@ -39,7 +39,7 @@ def decorate_sample_tag(tags:List[str])->List[str]:
     Return:
         a list with decorated elements
     '''
-    return [f'.*{tag}.*' for tag in tags]
+    return [f'*{tag}*' for tag in tags]
 
 
 def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
