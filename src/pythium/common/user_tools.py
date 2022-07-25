@@ -54,8 +54,9 @@ def InvMass(*plist):
     return p_com.mass
 
 def Et(*plist):
-    et = 0
-    for p in plist: et += p.pt
+     et = ak.zeros_like(plist[0].pt) 
+    for p in plist: 
+        et = et + p.pt
     return et
 
 def ProtonP4(posZ=True,beta=None):
