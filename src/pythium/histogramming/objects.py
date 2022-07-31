@@ -80,7 +80,8 @@ class Observable(object):
 
     @beartype
     def __init__( 
-        self, var: TypeOrListOfTypes[str], 
+        self, 
+        var: TypeOrListOfTypes[str], 
         name: str, 
         binning: TypeOrListOfTypes[_Binning], 
         dataset: str, 

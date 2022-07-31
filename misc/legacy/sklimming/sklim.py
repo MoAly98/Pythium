@@ -28,21 +28,13 @@ def get_args():
     return parser.parse_args()
 
 def main():
-    
-    args = get_args()
-    cfg = sklim.config.Config(args.cfg).process(args)
- 
-    if not cfg["general"]["dask"]:  scheduler = "synchronous" # Processes slower for 360histograms???
-    else:
-        cl = Client(**cfg["general"]["dasksettings"])
-        logger.info(f'Client Dashboard: {cl.dashboard_link}')
-        scheduler = cl
-
-    procer = hist.processor.Processor(cfg, scheduler)
-    procer.create()
-    hists_dict = procer.run()
-    procer.save(hists_dict)
-    if isinstance(scheduler, Client):   cl.close()
+    args = get_args() 
+    cfg_path = args.cfg
+    cfg = sklim.config.process(cfg_path)
+    cfg = sklim.config.update(cfg, args)
+    samples = []
+    for sample_name, sample in cfg["samples"].items():
+        sklim.reader.process_sample(sample, cfg)
 
 if __name__ == '__main__':
     main()

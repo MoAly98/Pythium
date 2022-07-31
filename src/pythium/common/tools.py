@@ -137,3 +137,13 @@ class Evaluator(ast.NodeVisitor):
     def get_names(self, string):
         variables = [node.id for node in ast.walk(ast.parse(string)) if isinstance(node, ast.Name)]
         return variables
+
+import copy
+class PythiumList(list):
+    def __init__(self, *args):
+        list.__init__(self, *args)
+    
+    def update(self, attr, val):
+        new_self = copy.deepcopy(self)
+        for elem in new_self:   setattr(elem, attr, val)
+        return new_self

@@ -1,7 +1,6 @@
 ''' We create a sample class '''
 from typing import List, Dict, Callable
 from pathlib import Path
-from glob import glob
 
 class Sample:
     def __init__(self, name, tag, where, branches, selec = None, isdata = False, files = None):

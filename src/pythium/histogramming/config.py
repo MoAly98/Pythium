@@ -45,11 +45,11 @@ class Config(object):
         self.schema = Schema(cfg_schema)
 
 
-    def process(self, args) -> Dict:
+    def process(self, args = None) -> Dict:
         path = self._cfg_path
         cfg_module = importfile(path)
         self.make_dict(cfg_module)
-        self.update(args)
+        if args is not None:    self.update(args)
         self.validate()
         return self.cfg
     
