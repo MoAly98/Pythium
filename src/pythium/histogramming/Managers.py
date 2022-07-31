@@ -6,7 +6,8 @@ import dask
 import os
 from collections import defaultdict
 from pprint import pprint
-import boost_histogram as bh
+from hist import Hist
+import hist
 import time 
 import awkward as ak
 from pythium.common.functor import Functor
@@ -122,7 +123,7 @@ class _TaskManager(object):
     def _make_histogram(self, var_data, weights, xp):
         observable = xp["observable"]
         axes = observable.axes
-        h = bh.Histogram(*axes, storage=bh.storage.Weight())
+        h = Hist(*axes, name = observable.name, storage=hist.storage.Weight())
         ## TODO:: Data rendering for masking problems
         var_arrs = []
         for field in var_data.fields:   var_arrs.append(var_data[field])
@@ -211,7 +212,6 @@ class _TaskManager(object):
         * if grab fron func:  obs.var == obs.name by construction (since the names from file are in args)
         # if grab from str:   obs.var == obs.name by construction (since the names from file are in string)
         '''
-        print(observable.var, observable.name, data.fields)
         var = data[observable.var]
         return var
 
