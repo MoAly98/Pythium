@@ -393,7 +393,12 @@ def create_new_branches(data: "ak.Array", new_branches: List["Branch"], mix_tree
     # If we have anu branches that are saved for later proessing, 
     # re-run the method on them with the updated data containing new branches
     if(len(new_branches_from_others)!=0):
-        data = create_new_branches(data, new_branches_from_others, mix_trees=mix_trees, trees_to_data=trees_to_data)
+        try:
+            data = create_new_branches(data, new_branches_from_others, mix_trees=mix_trees, trees_to_data=trees_to_data)
+        except RecursionError:
+            logger.error(f'Failed to build your branches due to recursion. Check all branch input and output names are not the same. \n \
+                          Check {[br.write_name for br in new_branches_from_others]}')
+            
     return data
 
 
