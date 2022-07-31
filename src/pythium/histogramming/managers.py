@@ -1,24 +1,43 @@
+'''
+This is where manage different parts of the histogramming stage
+'''
+
+# Python Imports
+import os
+from glob import glob 
+from collections import defaultdict
+import re
+import numpy as np
+# Scikit-HEP 
+import dask
+from hist import Hist
+import hist
+import awkward as ak
+# Pythium
 from pythium.common.tools import h5py_to_ak, json_to_ak, parquet_to_ak
 from pythium.histogramming.objects  import Observable, NTupSyst, TreeSyst, WeightSyst, CrossProduct
 from pythium.histogramming.binning import _Binning
-from glob import glob 
-import dask
-import os
-from collections import defaultdict
-from pprint import pprint
-from hist import Hist
-import hist
-import time 
-import awkward as ak
 from pythium.common.functor import Functor
-import numpy as np
-import re
 from pythium.common.logger import ColoredLogger
 
 logger = ColoredLogger()
 
 class _InputManager(object):
+
+    '''
+    Class responisble for preparing information about the 
+    input files and what we want from them
+    '''
     def __init__(self, xps, cfg):
+        '''
+        _InputManager constructor 
+
+        Attributes:
+            xps (List[CrossProduct]): A list of the cross-products to be evaluated
+            cfg (dict): The histogramming configuration dictionary
+        '''
+        
+        # Define the map from input format to read method
         read_methods = {
                         'parquet': 'ak_parquet',
                         'json': 'ak_json',
@@ -33,64 +52,122 @@ class _InputManager(object):
         self.reader = read_methods[self.ext]
     
     def required_variables(self):
+        '''
+         Method to determine which variable columns need to be retrieved from input files.
+         These are defined as:
+            - Variables directly requested with the Observable('variable','name') API
+            - Variables required to compute new Observables (either passed as args or inferred from a string)
+            - Weights column
+            - Variables required to apply a region seleciton
+            - Variables required to compute a weight variation
+        
+        These variables are encoded in `Functor` instances for each 
+        Observable, Selection and WeightSyst instances, as the attribute req_vars  
+        
+        Returns:
+            Mapping from `CrossProduct` instances to list of required variables passed as `Observable` instances
+        '''
+        
+        # To return Observable() instances, need some binning (which will not be used)
         dummy_binning =  [_Binning([1.,2.,3.])]
-        req_vars: List[Observable] = []
+        # Declare the map to be returned 
         xp_to_req = defaultdict(list)
+        new_vars_names= [ xp["observable"].name for xp in self.xps  if xp["observable"].builder.new ]
         for xp in self.xps:
+
             sample, region, obs, systematic, template = xp
+            
+            # Declare lists for different orirgins of required variables
             required_variables = []
             obs_vars, _region_sel_vars, sample_sel_vars, syst_vars = [],[],[],[]
             
+            # Get required variables for the current observable
+            # excluding variables that need to be built 
             obs_vars = [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) 
                          for reqvar in obs.builder.req_vars 
-                         if reqvar not in [xp["observable"].name 
-                         for xp in self.xps 
-                         if xp["observable"].builder.new] ]
+                         if reqvar not in new_vars_names
+                        ]
             
+            # If weight is given as a column name and is not a column that still need to be built
+            # then also grab it from input
             if isinstance(obs.weights,str):
-                obs_vars.extend([Observable(obs.weights, obs.weights, dummy_binning, obs.dataset)  ] )
+                if obs.weights not in new_vars_names:
+                    obs_vars.extend([Observable(obs.weights, obs.weights, dummy_binning, obs.dataset) ] )
             
+            # If a region is defined, then a selector is defined and we should get variables required to apply cuts
             region_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in region.sel.req_vars ] 
+            # if user flags that a Sample selection is applied at histogramming stage, get required variables to apply cuts
             if self.sample_sel:
                 sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars ]
             
+            # If the cross product involves a  weight systematic, need to grab required variables
             if isinstance(systematic, WeightSyst):
                 template = getattr(systematic, template)
+
+                # If the weight is defined by a function then we need the args for this function
                 if isinstance(template, Functor):
                     syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars ] 
+                # else, the weight is just in the input or will be built as a new variable
                 else:
-                    syst_vars = [Observable(template, template, dummy_binning, obs.dataset)]  
+                    if template not in new_vars_names:                    
+                        syst_vars = [ Observable(template, template, dummy_binning, obs.dataset) ]  
             
+            # Required variables is the combination of all variables we found are needed
             required_variables.extend(obs_vars+region_sel_vars+sample_sel_vars+syst_vars)
             
-            xp_to_req[xp] = required_variables
+            xp_to_req[xp] = list(set(required_variables)) # Remove duplicates
             
         return xp_to_req
 
     def required_paths(self):
+        '''
+        Method to summarise all the input files that need to be opened, so that
+        the task manager can open each file only once and get what's needed from it. 
+        The paths are constructed for each XP assuming Pythium naming system, where
+        a file is defiend by a sample + dataset.
+        TODO:: Support Custom inputs 
+        
+        Paths are gather from (In case of Pythium-like input):
+            - Paths to the nominal file needed for an observable
+            - Path to an alternative sample needed for an NTup systematic
+            - Path to an alternative tree needed for a Tree systematic
+        '''
+
         xp_to_paths = defaultdict(list)
         for xp in self.xps:
+            
             sample, region, observable, systematic, template = xp
+            
             if self.from_pyth:  # Follow pythium naming scheme
+
+                # Get the sample and observable in the current XP
                 sample_name = sample.name
                 obs_dataset = observable.dataset
+                # Build a regex path to be globbed using the file-extenstion provided by user and
+                # all the paths the user told us to look in
                 paths = [f"{path}/{sample_name}_*_{obs_dataset}.{self.ext}" for path in self.indirs]
+                
+                # If this is not a nominal histogram, then we may have NTuple or Tree variations
                 if template != 'nom':
+                    # If we have an Ntuple variation, then we want to access same dataset but different sample 
                     if isinstance(systematic, NTupSyst):
-                        sys_dirs =    getattr(systematic, "where")
+                        # User can ask to look in some other directory different from general setting
+                        sys_dirs =    getattr(systematic, "where", [None])
                         sys_samples = getattr(systematic, template)
                         if sys_dirs == [None]:
                             paths = [f"{indir}/{s_samp}_*_{obs_dataset}.{self.ext}" for indir in indirs for s_samp in sys_samples]
                         else:
                             paths = [f"{s_dir}/{s_samp}_*_{obs_dataset}.{self.ext}" for s_dir in sys_dirs for s_samp in sys_samples]
+                    
+                    # If we have a Tree variation, then we want to access a different dataset but same sample 
                     elif (isinstance(systematic, TreeSyst)):
                         syst_dataset = getattr(systematic, template) 
                         paths = [f"{indir}/{sample_name}_*_{syst_dataset}.{self.ext}" for indir in self.indirs]
 
+                # Glob and remove duplicates
                 paths = list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ]))
                 xp_to_paths[xp] = paths
                
-            
             else:
                 ## TODO:: Assume user defined (somehow?) #Custom? some supported special types? decoreator for custom?
                 logger.warning("Only outputs from Pythium currently supported")
@@ -158,7 +235,6 @@ class _TaskManager(object):
         # TODO:: Create variables for systematics?
 
         new_data = data
-        later = []
         # Loop through xp observables:
         for xp,_ in xps:
             observable = xp["observable"]
@@ -171,13 +247,15 @@ class _TaskManager(object):
             # into the data table somehow then we can just retrieve it.
             
             if observable.name in data.fields:  continue
+            # If user defines Osbsevable("In","Out"), they have to refer to it with "In"
+            # when constructing other variables
             if len(observable.var) == 1 and not builder.new:    continue 
             new_data[observable.name] = builder.evaluate(data)
 
             if not isinstance(xp["observable"].weights, (str, float, int)):
                 new_data['__pythweight__'] = xp["observable"].weights
         
-        return new_data#, later
+        return new_data
     
     @dask.delayed
     def _apply_cut(self, data, xp):

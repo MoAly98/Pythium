@@ -367,5 +367,4 @@ class OverallSyst(Systematic):
         super(OverallSys, self).__init__(name, "norm", **kwargs)
 
 # Try to be smart -- dont read again if you will just apply a weight 
-
 # Think re-weighting -- user should be able to give a function to reweight their observable using another
