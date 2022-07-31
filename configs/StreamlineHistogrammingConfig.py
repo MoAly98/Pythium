@@ -37,7 +37,7 @@ for ptag in partons:
                      dataset = 'tth_observables',label = rf'{ptag} $p_T$[GeV]',
                      weights='weight')
     
-    eta = Observable( ptag+'_eta', ptag+'_eta', 
+    eta = Observable( ptag+'_eta', ptag+'_etaout', 
                       binning = RegBin(low=-2.5, high=2.5, nbins = 20), 
                       dataset = 'tth_observables', label = rf'{ptag} $\eta$[GeV]',
                       weights=1.2)

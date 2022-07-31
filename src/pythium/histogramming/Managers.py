@@ -126,7 +126,6 @@ class _TaskManager(object):
         ## TODO:: Data rendering for masking problems
         var_arrs = []
         for field in var_data.fields:   var_arrs.append(var_data[field])
-        #print(weights)
         h.fill(*var_arrs, weight = weights)
         return h
 
@@ -164,7 +163,14 @@ class _TaskManager(object):
             observable = xp["observable"]
             builder = observable.builder
 
+            # Note for ndim observables, this is currently useless
+            # since we make the ND histogram by unpacking the
+            # relevant N variables. 
+            # TODO:: Find a way to support N-DIM array evaluation 
+            # into the data table somehow then we can just retrieve it.
+            
             if observable.name in data.fields:  continue
+            if len(observable.var) == 1 and not builder.new:    continue 
             new_data[observable.name] = builder.evaluate(data)
 
             if not isinstance(xp["observable"].weights, (str, float, int)):
@@ -199,6 +205,13 @@ class _TaskManager(object):
         observable = xp["observable"]
         systematic = xp["systematic"]
         # TODO:: Variable in systematic ?
+        '''
+        .var vs .name:
+        * if grab from file:  We grabbed and saved a obs.var column, so can access that
+        * if grab fron func:  obs.var == obs.name by construction (since the names from file are in args)
+        # if grab from str:   obs.var == obs.name by construction (since the names from file are in string)
+        '''
+        print(observable.var, observable.name, data.fields)
         var = data[observable.var]
         return var
 
