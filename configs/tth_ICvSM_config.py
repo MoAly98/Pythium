@@ -43,8 +43,9 @@ branchList.extend([
       Branch('ht_deta',DeltaEta, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
       Branch('ht_dR',DeltaR, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
       Branch('ht_M',InvMass, args = ['higgs_p4','top_p4'], args_types=[Branch,Branch]),
-      Branch('httbar_M',InvMass, args = ['higgs_p4','top_p4','tbar_p4'], args_types=[Branch]*3)
-])
+      Branch('httbar_M',InvMass, args = ['higgs_p4','top_p4','tbar_p4'], args_types=[Branch]*3),
+      Branch('weight','evtWeight'), ])
+
 branches[tname] = branchList
 
 samples = [Sample(name = sample_name, tag = ['run_01_tree'], 

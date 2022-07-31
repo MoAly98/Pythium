@@ -1,5 +1,5 @@
 from pathlib import Path
-from pythium.histogramming.Managers import _TaskManager, _InputManager
+from pythium.histogramming.managers import _TaskManager, _InputManager
 from pythium.histogramming.objects  import Observable, NTupSyst, TreeSyst, WeightSyst, CrossProduct
 from pythium.histogramming.binning import _Binning
 from pythium.common.functor import Functor

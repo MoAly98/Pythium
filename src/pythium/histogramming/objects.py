@@ -84,7 +84,7 @@ class Observable(object):
         name: str, 
         binning: TypeOrListOfTypes[_Binning], 
         dataset: str, 
-        weights: TypeOrListOfTypes[Union[str, NumbersArray]] = 1.,
+        weights: TypeOrListOfTypes[Union[str, float, NumbersArray]] = 1.,
         label: Optional[str] = '', 
         samples: Optional[List[str]] = None, 
         exclude_samples: Optional[List[str]] = None,
@@ -96,19 +96,19 @@ class Observable(object):
         
         # Everything arrays to support ndim operations
         self.var = var if isinstance(var, list) else [var,]
+        
+        
         self.binning = binning if isinstance(binning, list) else [binning]
         self.axes = self.get_axes()
-        self.weights = weights if isinstance(weights, list) else [weights]*len(self.var)
-        if isinstance(weights, (int, float)):   self.weights = weights
-        h_attr = [self.var, self.binning, self.axes, self.weights]
-        assert all(len(attr) == len(h_attr[0]) for attr in h_attr if (attr != self.weights and weights!=1.))
+
+        self.weights = weights 
+        h_attr = [self.var, self.binning, self.axes]
+        assert all(len(attr) == len(h_attr[0]) for attr in h_attr)
         self.ndim = len(h_attr[0])
 
         self.builder = obs_build
         if self.ndim != 1 and self.builder is not None:  logger.error("Building n-dim observables on the fly is not supported")
         if self.builder is None:   self.builder = Functor(lambda *args: args, self.var, reqvars= self.var, new = False)
-       
-       
        
         self.name = name
         self.label = label

@@ -32,25 +32,33 @@ class _InputManager(object):
         self.reader = read_methods[self.ext]
     
     def required_variables(self):
+        dummy_binning =  [_Binning([1.,2.,3.])]
         req_vars: List[Observable] = []
         xp_to_req = defaultdict(list)
         for xp in self.xps:
             sample, region, obs, systematic, template = xp
             required_variables = []
             obs_vars, _region_sel_vars, sample_sel_vars, syst_vars = [],[],[],[]
-        
-            obs_vars = [Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in obs.builder.req_vars if reqvar not in [xp["observable"].name for xp in self.xps if xp["observable"].builder.new] ]
-            region_sel_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in region.sel.req_vars ] 
             
+            obs_vars = [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) 
+                         for reqvar in obs.builder.req_vars 
+                         if reqvar not in [xp["observable"].name 
+                         for xp in self.xps 
+                         if xp["observable"].builder.new] ]
+            
+            if isinstance(obs.weights,str):
+                obs_vars.extend([Observable(obs.weights, obs.weights, dummy_binning, obs.dataset)  ] )
+            
+            region_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in region.sel.req_vars ] 
             if self.sample_sel:
-                sample_sel_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in sample.sel.req_vars ]
+                sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars ]
             
             if isinstance(systematic, WeightSyst):
                 template = getattr(systematic, template)
                 if isinstance(template, Functor):
-                    syst_vars =  [ Observable(reqvar, reqvar, obs.binning, obs.dataset) for reqvar in template.req_vars ] 
+                    syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars ] 
                 else:
-                    syst_vars = [Observable(template, template, obs.binning, obs.dataset)]  
+                    syst_vars = [Observable(template, template, dummy_binning, obs.dataset)]  
             
             required_variables.extend(obs_vars+region_sel_vars+sample_sel_vars+syst_vars)
             
@@ -118,6 +126,7 @@ class _TaskManager(object):
         ## TODO:: Data rendering for masking problems
         var_arrs = []
         for field in var_data.fields:   var_arrs.append(var_data[field])
+        #print(weights)
         h.fill(*var_arrs, weight = weights)
         return h
 
@@ -157,12 +166,15 @@ class _TaskManager(object):
 
             if observable.name in data.fields:  continue
             new_data[observable.name] = builder.evaluate(data)
-    
+
+            if not isinstance(xp["observable"].weights, (str, float, int)):
+                new_data['__pythweight__'] = xp["observable"].weights
         
         return new_data#, later
     
     @dask.delayed
     def _apply_cut(self, data, xp):
+
         # FIXME:: Override or combine selection?
         new_data = data
         
@@ -179,7 +191,7 @@ class _TaskManager(object):
         new_data = new_data[region.sel.evaluate(new_data)]
         
         # TODO:: 4. Apply observable cuts
-        
+
         return new_data
     
     @dask.delayed
@@ -192,14 +204,19 @@ class _TaskManager(object):
 
     @dask.delayed
     def _get_weights(self, data, xp):
-        
         #TODO:: overall weight
-        weights = 1
+        weights = 1.
+        if xp["sample"].isdata:    return weights
         #================ Observable weights 
         observable = xp["observable"]
         obs_weights = observable.weights
+
+        if '__pythweight__' in data.fields:
+            obs_weights = data['__pythweight__']
+        
         if isinstance(obs_weights, str):
             obs_weights = data[obs_weights]
+                 
         weights = weights*obs_weights
         
         #================ Systematic weights 
@@ -218,6 +235,7 @@ class _TaskManager(object):
         region_weights = region.weights
         if isinstance(region_weights, str):
             region_weights = data[region_weights]
+       
         weights = weights*region_weights
         return weights 
 
@@ -241,6 +259,11 @@ class _TaskManager(object):
 
             for xp_info in xps:
                 xp = xp_info[0]
+
+                # If weight is given as a numpy array or list, it is assumed
+                # to have same size as events and hence can be added as a column
+                # to data
+                
                 new_data = self._apply_cut(data, xp)
                 var = self._get_var(new_data, xp)
                 weights = self._get_weights(new_data, xp)
