@@ -176,6 +176,12 @@ class Observable(object):
                 axis = bh.axis.Variable(binning.binning)
             axes.append(axis)
         return axes
+    
+    def __hash__(self):
+        return hash(self.name)
+    def __eq__(self, other):
+        if not isinstance(other, type(self)): logger.error(f"Comparing an instance of {type(self)} with {type(other)} is not supported")
+        return self.name == other.name
 
 class Region(object):
     '''
