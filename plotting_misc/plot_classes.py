@@ -269,6 +269,7 @@ class Hist1D(EmptyPlot):
         stack=False, 
         xlim : Tuple[float,float] = None,
         ylim : Tuple[float,float] = None,
+        norm_to_data: bool = None,
         **kwargs
         ) -> None:
         
@@ -293,6 +294,7 @@ class Hist1D(EmptyPlot):
         self.logx     = logx
         self.xlim     = xlim
         self.ylim     = ylim
+        self.norm_to_data = norm_to_data
 
         self.samples_dict = {} # {'samplename': sample}
         self.histos_dict  = {} # {'samplename': sample (which will be plotted as histo bins)}
@@ -348,20 +350,20 @@ class Hist1D(EmptyPlot):
     
         obj = None
         try:
-            with open(self.dir + f"{self.obs}_file.pkl", 'rb') as file:
+            with open(self.dir + f"{self.obs}.pkl", 'rb') as file:
                 print('Reading from file: '+file.name)
                 obj = pickle.load(file)
         except:
-            logging.error(f"There is no file named {self.dir}{self.obs}_file.pkl")
+            logging.error(f"There is no file named {self.dir}{self.obs}.pkl")
         
         if obj is None:
-            logging.error(f"Could not load dictionary from {self.dir}{self.obs}_file.pkl")
+            logging.error(f"Could not load dictionary from {self.dir}{self.obs}.pkl")
 
         if not self.type_checker(obj, bh.Histogram):
             logging.error(f"The file {self.dir}{self.obs}.pkl does not contain a dict of hist objects")
 
         if not all(sname in obj for sname in self.samples):
-            logging.error(f"A sample is not in the file {self.dir}{self.obs}_file.pkl")                
+            logging.error(f"A sample is not in the file {self.dir}{self.obs}.pkl")                
 
         #TODO: move to separate function
         self.samples_dict = obj
@@ -401,10 +403,12 @@ class Hist1D(EmptyPlot):
         self.datasize, = first_sample.axes.size
         self.edges = list(first_sample.axes[0].edges)
         self.values = [list(x.values()) for x in self.samples_dict.values()]
+        self.xtitles_dict['xmain'] = first_sample.axes[0].label
+        self.mastertitle = first_sample.name
 
         # store label and name variables
         for samplename, sample in self.samples_dict.items():
-            name = sample.axes[0].name
+            name = sample.name
             label = sample.axes[0].label
             self.names.append(name if name else '')
             self.labels.append(label if label else '')
@@ -551,6 +555,16 @@ class Hist1D(EmptyPlot):
             
             return np.sum(valueslist, axis=0)
     
+    def get_stackvariances(self, listofhist: list) -> list:
+        """ Get total variances of a list of hist objects (with same edges, binwidths, etc.) """
+
+        varianceslist = []
+        for h in listofhist:
+            variances = h.variances()
+            varianceslist.append(variances)
+            
+        return np.sum(variances, axis=0)
+    
     
     def histbins_errs(self, ax: mpl.axes.Axes, ratio=False) -> None:
         """ Creates error bins on histbins using ax.bar """
@@ -564,10 +578,16 @@ class Hist1D(EmptyPlot):
         # if stack plot, put error only on the total height
         if self.is_stack:
             values = self.get_stackvalues(histlist)
-            poisson = np.sqrt(values)
+            variances = self.get_stackvariances(histlist)
+            poisson = np.sqrt(variances)
             
             # if ratio is True, this function is used to plot histbin errors on a ratio plot
-            if ratio:
+            if ratio: #TODO: FIXME!!!
+            #    heights = np.zeros(np.shape(values))
+            #    _bottom = np.zeros(np.shape(values))
+            #    mask = values > 0
+            #    heights[mask] = 2*(((poisson[mask]+values[mask])/values[mask])-1)
+            #    _bottom = 1-(((poisson[mask]+values[mask])/values[mask])-1)
                 heights = 2 * (((poisson + values) / values) - 1)
                 _bottom = 1 - (((poisson + values) / values) - 1)
             else:
@@ -589,10 +609,11 @@ class Hist1D(EmptyPlot):
         else:
             for i, H in enumerate(histlist):
                 values = H.values()
-                poisson = np.sqrt(values)
+                variances = H.variances()
+                poisson = np.sqrt(variances)
 
                 # if ratio is True, this function is used to plot histbin errors on ratio plot
-                if ratio:
+                if ratio: #TODO: FIXME!!!
                     heights = 2 * (((poisson + values) / values) - 1)
                     _bottom = 1 - (((poisson + values) / values) - 1)
                 else:
@@ -653,7 +674,20 @@ class Hist1D(EmptyPlot):
             _bins = self.edges
         else:
             _bins = None
-    
+        
+        if self.norm_to_data:
+            dataH,_,_ = self.get_samples_colors_labels(self.data_dict)
+            values = 0
+            for dH in dataH: values+=dH.values()
+            data_norm = sum(abs(values))
+
+            for i,hist in enumerate(H):
+                values = hist.values()
+                hist_norm = sum(abs(values))
+                scale = data_norm/hist_norm
+                hist *= scale
+                _llist[i]+=f' (*{scale:.1f})'
+                        
         if self.shape == 'hollow':
             hep.histplot(
                 H,
@@ -708,7 +742,7 @@ class Hist1D(EmptyPlot):
         self.set_legend(ax)
         
         # add atlas logo and text
-        self.set_explabel(ax)
+        #self.set_explabel(ax)
                 
         # scale ylim automatically for optimal legend placement
         #hep.plot.yscale_legend(ax) # gives error if ATLAS label is not plotted yet (idk why)
@@ -743,8 +777,8 @@ class Hist1D(EmptyPlot):
         
         # sort legend entries
         hep.sort_legend(ax)
-        #if hep.plot.overlap(ax, hep.plot._draw_leg_bbox(ax)):
-        #hep.plot.yscale_legend(ax) #FIXME: done iteratively in mplhep backend and takes too long.
+        if hep.plot.overlap(ax, hep.plot._draw_leg_bbox(ax)):
+            hep.plot.yscale_legend(ax) #FIXME: done iteratively in mplhep backend and takes too long.
         
     def colorlist_gen(self, n: int, colormap='gist_rainbow', reverse=False, max=98, min=2) -> list:
         """ Create custom color list of length n from a given colormap """
@@ -780,6 +814,7 @@ class Hist1D(EmptyPlot):
         logx: bool = None,
         xlim: Tuple[float,float] = None,
         ylim: Tuple[float,float] = None,
+        norm_to_data: bool = None,
         rcp_kw = {}
     ) -> None:
         
@@ -817,6 +852,10 @@ class Hist1D(EmptyPlot):
         # change location of legend
         if legendloc:
             self.legend_loc = legendloc
+        
+        #normalise to data
+        if norm_to_data:
+            self.norm_to_data = norm_to_data
         
         # if it is a stack plot but the shape is hollow, use color_order
         # (otherwise would automatically switch to default colormap)
