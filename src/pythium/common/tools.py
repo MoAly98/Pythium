@@ -29,18 +29,17 @@ def h5py_to_ak(infile, req_branches = None):
         
         if req_branches is None:    req_branches = data.fields
         data = data[[f for f in req_branches]]
-        cuts = tree.attrs["sel"]
     
-    return data, cuts
+    return data
 
 def json_to_ak(infile, req_branches = None):
     data = ak.from_json(infile)           
     if req_branches is None:    req_branches = data.fields
     data = data[[f for f in req_branches]]
-    return data, None
+    return data
 
 def parquet_to_ak(infile, req_branches = None):
-    return ak.from_parquet(infile, lazy=True, columns = req_branches), None
+    return ak.from_parquet(infile, lazy=True, columns = req_branches)
 
 def func_deepcopy(f, name=None):
     '''

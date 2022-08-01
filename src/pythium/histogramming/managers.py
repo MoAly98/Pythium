@@ -54,7 +54,7 @@ class _InputManager(object):
     def required_variables(self):
         '''
          Method to determine which variable columns need to be retrieved from input files.
-         These are defined as:
+         Required variables are gathered from:
             - Variables directly requested with the Observable('variable','name') API
             - Variables required to compute new Observables (either passed as args or inferred from a string)
             - Weights column
@@ -114,8 +114,8 @@ class _InputManager(object):
             
             # Required variables is the combination of all variables we found are needed
             required_variables.extend(obs_vars+region_sel_vars+sample_sel_vars+syst_vars)
-            
             xp_to_req[xp] = list(set(required_variables)) # Remove duplicates
+
             
         return xp_to_req
 
@@ -169,14 +169,36 @@ class _InputManager(object):
                 xp_to_paths[xp] = paths
                
             else:
-                ## TODO:: Assume user defined (somehow?) #Custom? some supported special types? decoreator for custom?
+                '''
+                TODO:: Assume user defined (somehow?) #Custom? some supported special types? decoreator for custom?
+                '''
                 logger.warning("Only outputs from Pythium currently supported")
                 pass
 
         return xp_to_paths
 
 class _TaskManager(object):
+    '''
+    Class responsible for building a task-graph from 
+    a variety of operations on the input data. In order
+    the manager will build the following workflow into a
+    graph:
+        1. Retrieve data from inputs
+        2. Create new variables needed 
+        4. Loop through cross-products
+        3. Apply event cuts (on all columns)
+        4. Retrieve the relevant observable column
+        5. Retrieve the relevant weights (can be columns/floats)
+        6. Make and fill histogram with observable and weights
+    '''
     def __init__(self, method, sample_sel):
+        '''
+        Constructor for `_TaskManager`
+        Attributes:
+            method (str):       Method name to-be-used for reading input
+            sample_sel (bool):  Should sample selections be applied or not
+        '''
+        # Mapping from method to function that implements this method
         readers = {
                     'ak_parquet': parquet_to_ak,
                     'ak_json': json_to_ak,
@@ -189,84 +211,137 @@ class _TaskManager(object):
 
     @dask.delayed
     def _get_data(self, inpath, observables):
-        data, _ = self.reader(inpath, list(set([vvar for v in observables for vvar in v.var ])))
-        return data, _
-    
-    @dask.delayed
-    def _merge_data(self, data_lst):
-        return ak.concatenate(data_lst)
+        '''
+        Call the method to retrieve data from one input file
 
-    @dask.delayed
-    def _make_histogram(self, var_data, weights, xp):
-        observable = xp["observable"]
-        axes = observable.axes
-        h = Hist(*axes, name = observable.name, storage=hist.storage.Weight())
-        ## TODO:: Data rendering for masking problems
-        var_arrs = []
-        for field in var_data.fields:   var_arrs.append(var_data[field])
-        h.fill(*var_arrs, weight = weights)
-        return h
+        (method called per input path)
+
+        Args:
+            inpath (str):   Path to file which should be opened 
+            observables (List[Observable]): List of `Observable` instances of variables 
+                                            to be retrieved from input file for the given
+                                            path
+    
+        Returns:
+            An awkward array of data columns retrieved from input path
+        '''
+        data = self.reader(inpath, [vvar for v in observables for vvar in v.var ])
+        return data
 
     @dask.delayed
     def sort_xps(self, xps):
         '''
+
         Sort the cross product order so that all new variables that do not depend on other
         new variables are computed first. This makes the creation of the variables less problematic
-        and avoids need for recursion which is bad practice in dask.delayed() funcitons. 
+        and avoids need for recursion which is bad practice in dask.delayed() funcitons.
+        
+        (method called per input path)
+        
+        Args:
+            xps (List[CrossProduct]):  List of cross-products whose histograms need 
+                                       to be computed for the given input path
+        
+        Returns:
+            Ordered list of cross-products such that XPs that use 
+            new variables which in-turn require other new variables 
+            are computed last. 
         '''
+
         now, later = [], []
-        for xp, _ in xps:
+        # Loop over XPs relevant to the given input path
+        for xp in xps:
+            
+            # Retrieve the observable and its builder 
             observable = xp["observable"]
             builder = observable.builder
-            if len( set(
-                        [ crossprod["observable"].name 
-                          for crossprod, _ in xps 
-                          if crossprod["observable"].builder.new]).intersection(set(builder.req_vars)
-                        )
-                    ) !=0:
-                
-                later.append((xp, None))
-            else:   now.append((xp, None))
+            # Make a list of new variables names
+            new_vars_names = [ crossprod["observable"].name for crossprod in xps if crossprod["observable"].builder.new]
+            # If the builder of the current variable require a new variable, it should be computed at the end
+            if len( set([new_varname for new_varname in new_vars_names]).intersection(set(builder.req_vars))) !=0:
+                later.append(xp)
+            else:   now.append(xp)
         
         return now+later # in that order
 
     @dask.delayed
     def _create_variables(self, data, xps):
-        # TODO:: Create variables for systematics?
+        ''' 
+        Compute and add new columns to the data if needed
+        Args:
+            data (ak.Array):   Data columns retrieved from input path
+            xps (List[CrossProduct]): The compute-from-file-first ordered list of XPs 
+                                      for a given path
+        
+        Retruns:
+            Awkward array with new columns added 
+        '''
+
+        '''
+        TODO:: Create variables for systematics?
+        '''
 
         new_data = data
-        # Loop through xp observables:
-        for xp,_ in xps:
+        # Loop through xps for a given path
+        for xp in xps:
+            
+            # Retrieve the observable builder
             observable = xp["observable"]
             builder = observable.builder
-
-            # Note for ndim observables, this is currently useless
-            # since we make the ND histogram by unpacking the
-            # relevant N variables. 
-            # TODO:: Find a way to support N-DIM array evaluation 
-            # into the data table somehow then we can just retrieve it.
             
+            '''
+             Note for ndim observables, this is currently useless
+             since we make the ND histogram by unpacking the
+             relevant N variables. 
+             TODO:: Find a way to support N-DIM array evaluation 
+             into the data table somehow then we can just retrieve it.
+            '''
+            
+            # If observable name is already a column, nothing to do
             if observable.name in data.fields:  continue
-            # If user defines Osbsevable("In","Out"), they have to refer to it with "In"
-            # when constructing other variables
+
+            # If observable is just grabbed form input and renamed, nothing to do
+            # If user renames an observable, this is only reflected in the histogram
+            # name, but not when constructing other variables (funcs must use name in input)
             if len(observable.var) == 1 and not builder.new:    continue 
+
+            # Evaluate the builder of that observable and add it as a column
+            # with the user-given name
             new_data[observable.name] = builder.evaluate(data)
 
+            # Special case where a weight is given as an array to Observable
+            # Assume it's same length as NEvents and add it as a column 
             if not isinstance(xp["observable"].weights, (str, float, int)):
+                if len(xp["observable"].weights) != len(new_data[new_data.fields[0]]):
+                    logger.error(f'Weights array provided for {observable.name} has wrong length')
                 new_data['__pythweight__'] = xp["observable"].weights
         
         return new_data
     
     @dask.delayed
     def _apply_cut(self, data, xp):
-
-        # FIXME:: Override or combine selection?
-        new_data = data
+        '''
+        Apply event selection onto all columns. Object-wise selection
+        should be appplied in the form of masks. 
+        Args:
+            data (ak.Array):   Data columns retrieved from input path
+            xps (List[CrossProduct]): The compute-from-file-first ordered list of XPs 
+                                      for a given path
+        Retruns:
+            Awkward array with event selection applied to columns
+        '''
         
+        '''
+        FIXME:: Override or combine selection?
+        '''
+
+        new_data = data
         sample = xp["sample"]
         region = xp["region"]
         # 1st apply overall cuts
-        # TODO:: What about overall cuts to apply to all histos?
+        '''
+        TODO:: What about overall cuts to apply to all histos?
+        '''
         
         # 2. Apply sample cuts
         if sample.sel is not None and self.sample_sel:
@@ -275,15 +350,50 @@ class _TaskManager(object):
         # 3. Apply region cuts
         new_data = new_data[region.sel.evaluate(new_data)]
         
-        # TODO:: 4. Apply observable cuts
+        '''
+        TODO:: 4. Apply observable cuts
+        '''
 
         return new_data
+
+    @dask.delayed
+    def _make_histogram(self, var_data, weights, xp):
+        '''
+        Method to create and fill a histogram using data from 
+        one path that contributes to a given XP histogram. 
+
+        (method called per input path per XP)
+
+        Args:
+            var_data (ak.Array):        A column/columns of data which should fill the histogram
+            weights (ak.Array | float): The event weight to be used to fill the histogram
+            xp (CrossProduct):          The XP instance holding information on the current histogram
+        Retruns:
+            A filled `Hist` object
+        '''
+        observable = xp["observable"]
+        axes = observable.axes
+        h = Hist(*axes, name = observable.name, storage=hist.storage.Weight())
+        '''
+        TODO:: Data rendering for masking problems
+        '''
+        var_arrs = []
+        for field in var_data.fields:   var_arrs.append(var_data[field])
+        h.fill(*var_arrs, weight = weights)
+        return h
+
     
     @dask.delayed
     def _get_var(self, data, xp):
+        '''
+        Method to retrieve a column from data
+        Args:
+            data (ak.Array):   Data columns retrieved from input path
+            xp (CrossProduct): The XP being computed
+        Retruns:
+            Awkward array with the relevant column's data
+        '''
         observable = xp["observable"]
-        systematic = xp["systematic"]
-        # TODO:: Variable in systematic ?
         '''
         .var vs .name:
         * if grab from file:  We grabbed and saved a obs.var column, so can access that
@@ -291,35 +401,66 @@ class _TaskManager(object):
         # if grab from str:   obs.var == obs.name by construction (since the names from file are in string)
         '''
         var = data[observable.var]
+
+        systematic = xp["systematic"]
+        '''
+        TODO:: Variable in systematic ?
+        '''
         return var
 
     @dask.delayed
     def _get_weights(self, data, xp):
-        #TODO:: overall weight
+        '''
+         Method to compute event weights from different sources.
+         For example, if weights are given to an observable, as 
+         well as to a WeightSystematic, then we need to multiply both
+        Args:
+            data (ak.Array):   Data columns retrieved from input path
+            xp (CrossProduct): The XP being computed
+        Retruns:
+            Awkward array with the relevant weight column's data or a float
+        '''
+
+        '''
+        TODO:: overall weight from general settings
+        '''
+
+        # Start with a unit weight
         weights = 1.
+
+        # If sample is a data sample, weights are unity
         if xp["sample"].isdata:    return weights
+
         #================ Observable weights 
         observable = xp["observable"]
         obs_weights = observable.weights
-
+        
+        # If weight has been provided as an array
+        # to observable constructor, then we saved
+        # it as a __pythweight__ column
         if '__pythweight__' in data.fields:
             obs_weights = data['__pythweight__']
         
+        # If weight is a string, assume it's a column name
         if isinstance(obs_weights, str):
             obs_weights = data[obs_weights]
-                 
+        
+        # Multiply column/float with current weight
         weights = weights*obs_weights
         
         #================ Systematic weights 
         systematic = xp["systematic"]
-        if isinstance(systematic, WeightSyst):# and observable.ndim == 1:
+        
+        # Need extra weight if systematic is a Weight Variation
+        if isinstance(systematic, WeightSyst):
             syst_weights = getattr(systematic, xp["template"])
+            # If the weight is given as a functor, need to compute it
             if isinstance(syst_weights, Functor):
                 syst_weights = syst_weights.evaluate(data)
+            # otherwise we just have to grab it
             elif isinstance(weights, str):
                 syst_weights = data[syst_weights]
             weights = weights*syst_weights
-        
             
         #================ Region weights
         region = xp["region"]
@@ -329,50 +470,91 @@ class _TaskManager(object):
        
         weights = weights*region_weights
         return weights 
-
-    def _build_tree(self, xp_paths_map, xp_vars_map):
+    
+    def paths_to_xpinfo(self, xp_to_paths, xp_to_vars):  
+        '''
+        Method to convert XP -> paths and XP -> required variables
+        maps into path -> xp and path -> required variables maps
+        '''  
 
         path_to_xp = defaultdict(list)
-        vars_set = set()
-        for xp, paths in xp_paths_map.items():
+        path_to_vars = defaultdict(list)
+        for xp, paths in xp_to_paths.items():
             for path in paths:
-                # FIXME:: Assume that for a given path, all variables 
-                # needed from all xps are available in the file. 
-                vars_set |= set(xp_vars_map[xp])
-                path_to_xp[path].append((xp, vars_set))
+                path_to_xp[path].append(xp)
+                # No need for XP boundary in required_variables
+                # since all required_variables for xps needing this
+                # path should be available in the path
+                path_to_vars[path].extend(xp_to_vars[xp])
         
+        return path_to_xp, path_to_vars
+    
+    def _build_tree(self, xp_paths_map, xp_vars_map):
+        '''
+        Method to build an optimized task graph of the entire
+        histogramming chain.
+        
+        Args:
+            xp_paths_map: Mapping from XP to paths needed
+            xp_vars_map:  Mapping from XP to variables needed
+        
+        Return:
+            List of dask tasks to be executed
+            Corresponding list of XPs (matches the list of jobs)
+
+        '''
+
+
+        # Conver maps such that paths are keys so that
+        # we open each path once and get info needed for 
+        # all xps, instead of opening it once-per-xp that needs it
+        paths_to_xp, path_to_vars = self.paths_to_xpinfo(xp_paths_map, xp_vars_map)
+        
+        # Mapping to store all filled histograms from all paths
+        # contributing to each XP
         xp_to_hists = defaultdict(list)
-        for path, xps in path_to_xp.items():
-            data = self._get_data(path,  list(xps[0][1]))[0]
-            
+
+        for path, _ in paths_to_xp.items():
+            xps = paths_to_xp[path]
+            variables = path_to_vars[path]
+            # Retrieve all relevant data from input path
+            data = self._get_data(path, list(set(variables)))
+            # Sort the XPs that need this data in order of computation
             sorted_xps = self.sort_xps(xps)
+            # Create new variables as needed
             data = self._create_variables(data, sorted_xps)
 
-            for xp_info in xps:
-                xp = xp_info[0]
-
-                # If weight is given as a numpy array or list, it is assumed
-                # to have same size as events and hence can be added as a column
-                # to data
-                
+            for xp in xps:
+                # For each XP, apply cuts dictated by XP components
                 new_data = self._apply_cut(data, xp)
+                # Retrieve the variable to be histogrammed
                 var = self._get_var(new_data, xp)
+                # Retrieve the event weights 
                 weights = self._get_weights(new_data, xp)
                 # Will have n-histograms from n-paths 
                 xp_to_hists[xp].append(self._make_histogram(var, weights,xp))
 
-        
+        # Now we sum histograms for each XP together to compute
+        # the total histogram for the XP
         jobs, xps = [], []
         for xp, data in xp_to_hists.items():    
             jobs.append(dask.delayed(sum)(data)) # sum histograms from different paths
             xps.append(xp)
 
-        
-        
         return jobs, xps
 
     @classmethod
-    def hist_wanted(cls, sample, region, observable, syst, template, ):
+    def hist_wanted(cls, sample, region, observable, syst, template,):
+        '''
+        Method to determine if a XP is needed or not
+        Args:
+            sample (Sample):  Relevant sample
+            region (Region):  Relevant region
+            observable (Observable): Relevant observable
+            syst    (Systematic): Relevant systematic 
+            template (str):  Relevant template
+        '''
+        
         make_hist: bool = True
         make_hist &= sample_in_region(sample, region)
         make_hist &= template_in_sample(sample, template)
