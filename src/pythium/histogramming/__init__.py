@@ -1,6 +1,7 @@
 
 from . import config
 from . import processor
-from .objects import *
-from .binning import *
+from . import managers
+from . import binning
+from . import objects
 
