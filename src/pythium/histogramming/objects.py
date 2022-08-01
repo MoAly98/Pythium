@@ -20,8 +20,7 @@ from beartype.typing import List, Callable, Dict
 from beartype import beartype
 # ========= scikit
 import numpy as np
-import boost_histogram as bh
-
+import hist
 
 
 class CrossProduct(object):
@@ -85,7 +84,7 @@ class Observable(object):
         binning: TypeOrListOfTypes[_Binning], 
         dataset: str, 
         weights: TypeOrListOfTypes[Union[str, float, NumbersArray]] = 1.,
-        label: Optional[str] = '', 
+        label: Optional[TypeOrListOfTypes[str]] = '', 
         samples: Optional[List[str]] = None, 
         exclude_samples: Optional[List[str]] = None,
         regions: Optional[List[str]] = None,
@@ -94,24 +93,24 @@ class Observable(object):
         obs_build: Optional[TypeOrListOfTypes[Functor]] = None
     ) -> None :
         
+        self.name = name
+
         # Everything arrays to support ndim operations
         self.var = var if isinstance(var, list) else [var,]
-        
-        
-        self.binning = binning if isinstance(binning, list) else [binning]
+        self.labels = label if isinstance(label, list) else [label,]
+        self.binning = binning if isinstance(binning, list) else [binning,]
         self.axes = self.get_axes()
 
         self.weights = weights 
-        h_attr = [self.var, self.binning, self.axes]
-        assert all(len(attr) == len(h_attr[0]) for attr in h_attr)
+        h_attr = [self.var, self.binning, self.axes, self.labels]
+        assert all(len(attr) == len(h_attr[0]) for attr in h_attr), \
+               logger.error(f"Ensure the dimensionality of required variables, binning and labels is the same for {self.name}")
         self.ndim = len(h_attr[0])
 
         self.builder = obs_build
         if self.ndim != 1 and self.builder is not None:  logger.error("Building n-dim observables on the fly is not supported")
         if self.builder is None:   self.builder = Functor(lambda *args: args, self.var, reqvars= self.var, new = False)
-       
-        self.name = name
-        self.label = label
+        
         self.dataset = dataset
         self.samples = samples
         self.excluded_samples = exclude_samples
@@ -169,11 +168,21 @@ class Observable(object):
     
     def get_axes(self):
         axes = []
-        for binning in self.binning:
+        for i, binning in enumerate(self.binning):
             if isinstance(binning, RegBin):
-                axis = bh.axis.Regular(binning.nbins, binning.min, binning.max)
+                axis = hist.axis.Regular( binning.nbins, 
+                                          binning.min, 
+                                          binning.max, 
+                                          name = self.labels[i],
+                                          overflow=True, 
+                                          underflow=True,
+                                          )
             else:
-                axis = bh.axis.Variable(binning.binning)
+                axis = hist.axis.Variable( binning.binning,
+                                           name = self.labels[i],
+                                           overflow=True, 
+                                           underflow=True,
+                                          )
             axes.append(axis)
         return axes
     

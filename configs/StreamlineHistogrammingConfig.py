@@ -44,7 +44,7 @@ for ptag in partons:
 
     pt_eta = Observable( [ptag+'_pt', ptag+'_eta'], ptag+'_pt_eta', 
                          binning = [RegBin(low=0, high=1000, nbins = 50), RegBin(low=-2.7, high=2.7, nbins = 25, axis= 1)], 
-                         dataset = 'tth_observables' , label = rf'{ptag} $\eta$-$p_T$[GeV]',
+                         dataset = 'tth_observables' , label = [rf'{ptag} $p_T$[GeV]',rf'{ptag} $\eta$[GeV]'],
                          weights = np.array([0.9]*100000))
 
     pt_sq = Observable.fromFunc( ptag+'_pt_sq',
