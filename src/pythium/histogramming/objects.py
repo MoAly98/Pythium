@@ -93,19 +93,19 @@ class Observable(object):
         obs_build: Optional[TypeOrListOfTypes[Functor]] = None
     ) -> None :
         
+        logger = ColoredLogger()
         self.name = name
 
         # Everything arrays to support ndim operations
         self.var = var if isinstance(var, list) else [var,]
         self.labels = label if isinstance(label, list) else [label,]
         self.binning = binning if isinstance(binning, list) else [binning,]
-        self.axes = self.get_axes()
-
-        self.weights = weights 
-        h_attr = [self.var, self.binning, self.axes, self.labels]
+        h_attr = [self.var, self.binning, self.labels]
         assert all(len(attr) == len(h_attr[0]) for attr in h_attr), \
                logger.error(f"Ensure the dimensionality of required variables, binning and labels is the same for {self.name}")
         self.ndim = len(h_attr[0])
+        self.axes = self.get_axes()
+        self.weights = weights 
 
         self.builder = obs_build
         if self.ndim != 1 and self.builder is not None:  logger.error("Building n-dim observables on the fly is not supported")
