@@ -1,5 +1,5 @@
 '''
-This is where manage different parts of the histogramming stage
+This is where manage different parts of the histogramming stage :py:class:`pythium.histogramming.managers._InputManager`
 '''
 
 # Python Imports
@@ -32,7 +32,7 @@ class _InputManager(object):
         '''
         _InputManager constructor 
 
-        Attributes:
+        Args:
             xps (List[CrossProduct]): A list of the cross-products to be evaluated
             cfg (dict): The histogramming configuration dictionary
         '''
@@ -53,17 +53,18 @@ class _InputManager(object):
     
     def required_variables(self):
         '''
-         Method to determine which variable columns need to be retrieved from input files.
-         Required variables are gathered from:
-            - Variables directly requested with the Observable('variable','name') API
-            - Variables required to compute new Observables (either passed as args or inferred from a string)
-            - Weights column
-            - Variables required to apply a region seleciton
-            - Variables required to compute a weight variation
+        Method to determine which variable columns need to be retrieved from input files.
+        Required variables are gathered from:
+
+        - Variables directly requested with the `Observable('variable','name')` API
+        - Variables required to compute new `Observable` s (either passed as args or inferred from a string)
+        - Weights column
+        - Variables required to apply a region seleciton
+        - Variables required to compute a weight variation
         
         These variables are encoded in `Functor` instances for each 
-        Observable, Selection and WeightSyst instances, as the attribute req_vars  
-        
+        `Observable`, `Selection` and `WeightSyst` instances, as the attribute req_vars  
+
         Returns:
             Mapping from `CrossProduct` instances to list of required variables passed as `Observable` instances
         '''
@@ -121,16 +122,19 @@ class _InputManager(object):
 
     def required_paths(self):
         '''
-        Method to summarise all the input files that need to be opened, so that
-        the task manager can open each file only once and get what's needed from it. 
+        Method to summarise all the input files that need to be opened.
+        
+        Goal is to have the task manager open each file only once and get what's needed from it. 
         The paths are constructed for each XP assuming Pythium naming system, where
         a file is defiend by a sample + dataset.
-        TODO:: Support Custom inputs 
-        
+
         Paths are gather from (In case of Pythium-like input):
-            - Paths to the nominal file needed for an observable
-            - Path to an alternative sample needed for an NTup systematic
-            - Path to an alternative tree needed for a Tree systematic
+
+        - Paths to the nominal file needed for an observable
+        - Path to an alternative sample needed for an NTup systematic
+        - Path to an alternative tree needed for a Tree systematic
+        
+        TODO:: Support Custom inputs 
         '''
 
         xp_to_paths = defaultdict(list)
@@ -183,13 +187,15 @@ class _TaskManager(object):
     a variety of operations on the input data. In order
     the manager will build the following workflow into a
     graph:
-        1. Retrieve data from inputs
-        2. Create new variables needed 
-        4. Loop through cross-products
-        3. Apply event cuts (on all columns)
-        4. Retrieve the relevant observable column
-        5. Retrieve the relevant weights (can be columns/floats)
-        6. Make and fill histogram with observable and weights
+
+    - Retrieve data from inputs
+    - Create new variables needed 
+    - Loop through cross-products
+    - Apply event cuts (on all columns)
+    - Retrieve the relevant observable column
+    - Retrieve the relevant weights (can be columns/floats)
+    - Make and fill histogram with observable and weights
+
     '''
     def __init__(self, method, sample_sel):
         '''
@@ -214,8 +220,6 @@ class _TaskManager(object):
         '''
         Call the method to retrieve data from one input file
 
-        (method called per input path)
-
         Args:
             inpath (str):   Path to file which should be opened 
             observables (List[Observable]): List of `Observable` instances of variables 
@@ -235,8 +239,6 @@ class _TaskManager(object):
         Sort the cross product order so that all new variables that do not depend on other
         new variables are computed first. This makes the creation of the variables less problematic
         and avoids need for recursion which is bad practice in dask.delayed() funcitons.
-        
-        (method called per input path)
         
         Args:
             xps (List[CrossProduct]):  List of cross-products whose histograms need 
@@ -268,12 +270,13 @@ class _TaskManager(object):
     def _create_variables(self, data, xps):
         ''' 
         Compute and add new columns to the data if needed
+        
         Args:
             data (ak.Array):   Data columns retrieved from input path
             xps (List[CrossProduct]): The compute-from-file-first ordered list of XPs 
                                       for a given path
         
-        Retruns:
+        Return:
             Awkward array with new columns added 
         '''
 
@@ -323,11 +326,12 @@ class _TaskManager(object):
         '''
         Apply event selection onto all columns. Object-wise selection
         should be appplied in the form of masks. 
+        
         Args:
             data (ak.Array):   Data columns retrieved from input path
             xps (List[CrossProduct]): The compute-from-file-first ordered list of XPs 
                                       for a given path
-        Retruns:
+        Return:
             Awkward array with event selection applied to columns
         '''
         
@@ -362,13 +366,12 @@ class _TaskManager(object):
         Method to create and fill a histogram using data from 
         one path that contributes to a given XP histogram. 
 
-        (method called per input path per XP)
-
         Args:
             var_data (ak.Array):        A column/columns of data which should fill the histogram
             weights (ak.Array | float): The event weight to be used to fill the histogram
             xp (CrossProduct):          The XP instance holding information on the current histogram
-        Retruns:
+        
+        Return:
             A filled `Hist` object
         '''
         observable = xp["observable"]
@@ -386,12 +389,15 @@ class _TaskManager(object):
     @dask.delayed
     def _get_var(self, data, xp):
         '''
-        Method to retrieve a column from data
+        Method to retrieve a column from data.
+        
         Args:
             data (ak.Array):   Data columns retrieved from input path
             xp (CrossProduct): The XP being computed
-        Retruns:
+        
+        Return:
             Awkward array with the relevant column's data
+    
         '''
         observable = xp["observable"]
         '''
@@ -411,23 +417,23 @@ class _TaskManager(object):
     @dask.delayed
     def _get_weights(self, data, xp):
         '''
-         Method to compute event weights from different sources.
-         For example, if weights are given to an observable, as 
-         well as to a WeightSystematic, then we need to multiply both
+        Method to compute event weights from different sources.
+        For example, if weights are given to an observable, as 
+        well as to a WeightSystematic, then we need to multiply both
+        
         Args:
             data (ak.Array):   Data columns retrieved from input path
             xp (CrossProduct): The XP being computed
-        Retruns:
+        
+        Return:
             Awkward array with the relevant weight column's data or a float
-        '''
-
-        '''
-        TODO:: overall weight from general settings
         '''
 
         # Start with a unit weight
         weights = 1.
-
+        '''
+        TODO:: overall weight from general settings
+        '''
         # If sample is a data sample, weights are unity
         if xp["sample"].isdata:    return weights
 
