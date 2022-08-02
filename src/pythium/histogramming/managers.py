@@ -22,7 +22,7 @@ from pythium.common.logger import ColoredLogger
 
 logger = ColoredLogger()
 
-class InputManager(object):
+class _InputManager(object):
 
     '''
     Class responisble for preparing information about the 
@@ -181,7 +181,7 @@ class InputManager(object):
 
         return xp_to_paths
 
-class TaskManager(object):
+class _TaskManager(object):
     '''
     Class responsible for building a task-graph from 
     a variety of operations on the input data. In order
