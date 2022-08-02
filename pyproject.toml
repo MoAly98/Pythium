@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 dynamic = ["version"]
-dependencies = ["boost_histogram>=1.0.2",
+dependencies = ["hist",
                 "awkward>=1.0",
                 "uproot4>=4.0",
                 "mplhep",
@@ -47,7 +47,7 @@ documentation = "https://pythium.readthedocs.io/en/main/"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["pythium"]
+include = ["pythium", "pythium.sklimming","pythium.histogramming", "pythium.scripts", "pythium.common"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pythium.__version__"}
