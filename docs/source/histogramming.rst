@@ -24,5 +24,5 @@ Processing
 
 Task Managing
 -------------
-.. automodule:: pythium.histogramming.Managers
+.. automodule:: pythium.histogramming.managers
     :members:
