@@ -9,7 +9,7 @@ from collections import defaultdict
 # Scikit-HEP
 import dask
 # Pythium
-from pythium.histogramming.managers import _TaskManager, _InputManager
+from pythium.histogramming.managers import TaskManager, InputManager
 from pythium.histogramming.objects  import  CrossProduct
 from pythium.common.logger import ColoredLogger
 
