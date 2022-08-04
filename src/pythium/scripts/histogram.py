@@ -49,7 +49,7 @@ def main():
         logger.info(f'Client Dashboard: {cl.dashboard_link}')
         scheduler = cl
 
-    procer = hist.processor.Processor(cfg, scheduler)
+    procer = hist.processor.Processor(scheduler, **cfg)
     procer.create()
     hists_dict = procer.run()
     procer.save(hists_dict)

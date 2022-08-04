@@ -28,7 +28,7 @@ class _InputManager(object):
     Class responisble for preparing information about the 
     input files and what we want from them
     '''
-    def __init__(self, xps, cfg):
+    def __init__(self, xps, general_settings):
         '''
         _InputManager constructor 
 
@@ -45,11 +45,11 @@ class _InputManager(object):
                         'h5': 'ak_h5'
                         }
         self.xps = xps
-        self.indirs = cfg["general"]["indir"]
-        self.from_pyth = cfg["general"]["frompythium"]
-        self.ext = cfg["general"]["informat"]
-        self.sample_sel = cfg["general"]["samplesel"]
-        self.reader = read_methods[self.ext]
+        self.indirs     = general_settings["indir"]
+        self.from_pyth  = general_settings["frompythium"]
+        self.ext        = general_settings["informat"]
+        self.sample_sel = general_settings["samplesel"]
+        self.reader     = read_methods[self.ext]
     
     def required_variables(self):
         '''
@@ -149,7 +149,7 @@ class _InputManager(object):
                 obs_dataset = observable.dataset
                 # Build a regex path to be globbed using the file-extenstion provided by user and
                 # all the paths the user told us to look in
-                paths = [f"{path}/{sample_name}_*_{obs_dataset}.{self.ext}" for path in self.indirs]
+                paths = [f"{path}/{sample_name}*{obs_dataset}*.{self.ext}".replace('//','/') for path in self.indirs]
                 
                 # If this is not a nominal histogram, then we may have NTuple or Tree variations
                 if template != 'nom':
@@ -159,14 +159,14 @@ class _InputManager(object):
                         sys_dirs =    getattr(systematic, "where", [None])
                         sys_samples = getattr(systematic, template)
                         if sys_dirs == [None]:
-                            paths = [f"{indir}/{s_samp}_*_{obs_dataset}.{self.ext}" for indir in indirs for s_samp in sys_samples]
+                            paths = [f"{indir}/{s_samp}*{obs_dataset}*.{self.ext}".replace('//','/') for indir in indirs for s_samp in sys_samples]
                         else:
-                            paths = [f"{s_dir}/{s_samp}_*_{obs_dataset}.{self.ext}" for s_dir in sys_dirs for s_samp in sys_samples]
+                            paths = [f"{s_dir}/{s_samp}*{obs_dataset}*.{self.ext}".replace('//','/') for s_dir in sys_dirs for s_samp in sys_samples]
                     
                     # If we have a Tree variation, then we want to access a different dataset but same sample 
                     elif (isinstance(systematic, TreeSyst)):
                         syst_dataset = getattr(systematic, template) 
-                        paths = [f"{indir}/{sample_name}_*_{syst_dataset}.{self.ext}" for indir in self.indirs]
+                        paths = [f"{indir}/{sample_name}*{syst_dataset}*.{self.ext}".replace('//','/') for indir in self.indirs]
 
                 # Glob and remove duplicates
                 paths = list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ]))
@@ -197,7 +197,7 @@ class _TaskManager(object):
     - Make and fill histogram with observable and weights
 
     '''
-    def __init__(self, method, sample_sel):
+    def __init__(self, input_manager, sample_sel):
         '''
         Constructor for `_TaskManager`
         Attributes:
@@ -211,7 +211,8 @@ class _TaskManager(object):
                     'ak_h5': h5py_to_ak,
                     'uproot': NotImplementedError("Unsupported input type")
                     }
-        self.reader = readers[method]
+        self.input_manager = input_manager
+        self.reader = readers[ self.input_manager.reader]
         self.sample_sel = sample_sel
     
 
@@ -232,7 +233,6 @@ class _TaskManager(object):
         data = self.reader(inpath, [vvar for v in observables for vvar in v.var ])
         return data
 
-    @dask.delayed
     def sort_xps(self, xps):
         '''
 
@@ -495,7 +495,7 @@ class _TaskManager(object):
         
         return path_to_xp, path_to_vars
     
-    def _build_tree(self, xp_paths_map, xp_vars_map):
+    def _build_tree(self):
         '''
         Method to build an optimized task graph of the entire
         histogramming chain.
@@ -509,7 +509,8 @@ class _TaskManager(object):
             Corresponding list of XPs (matches the list of jobs)
 
         '''
-
+        xp_paths_map = self.input_manager.required_paths()
+        xp_vars_map  =  self.input_manager.required_variables()
 
         # Conver maps such that paths are keys so that
         # we open each path once and get info needed for 
@@ -563,6 +564,7 @@ class _TaskManager(object):
         
         make_hist: bool = True
         make_hist &= sample_in_region(sample, region)
+        
         make_hist &= template_in_sample(sample, template)
         
         if template == 'nom':   return make_hist
