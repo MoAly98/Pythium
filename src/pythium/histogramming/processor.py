@@ -19,16 +19,22 @@ class Processor(object):
     Class which sorts through the user configuration and makes transactions
     with the managers in order to run a histogramming chain
     '''
-    def __init__(self, config, scheduler):
+    def __init__(self, scheduler, **config):
         '''
         Attributes:
             config (Dict):  Mapping of the settings from the config file
             scheduler (str):    The scheduler to-be-used by dask
         '''
 
-        self.cfg = config
-        self.outdir = Path(self.cfg["general"]["outdir"])
-        os.makedirs(self.outdir, exist_ok=True)
+        #self.cfg = config
+        
+        self.samples =  config.get("samples")
+        self.regions = config.get("regions")
+        self.systematics = config.get("systematics")
+        self.observables = config.get("observables")
+        self.general_settings = config.get("general")
+        self.outdir = Path(self.general_settings["outdir"])
+
         self.scheduler = scheduler
         self.graph = None
         self.xps = None
@@ -42,24 +48,22 @@ class Processor(object):
         logger = ColoredLogger()
 
         #======= Analysis objects from config 
-        samples =  self.cfg["samples"]
-        regions = self.cfg["regions"]
-        systematics = self.cfg["systematics"]
-        observables = self.cfg["observables"]
+        samples =  self.samples
+        regions = self.regions
+        systematics = self.systematics
+        observables = self.observables
 
         # Build the list of XPs to be computed 
         xp_iter = list(self.cross_product(samples, regions, systematics, observables))
         # Initialize an inputs manager to handle what is needed from inputs
-        input_manager =  _InputManager(xp_iter, self.cfg)
-        xp_to_req_vars = input_manager.required_variables()
-        xp_to_paths = input_manager.required_paths()
+        input_manager =  _InputManager(xp_iter, self.general_settings)
         # Intitalise a task manager to handle how the task graph should look
-        task_manager = _TaskManager(input_manager.reader, sample_sel = self.cfg["general"]["samplesel"])
-        task_tree, xps = task_manager._build_tree(xp_to_paths, xp_to_req_vars)
+        task_manager = _TaskManager(input_manager, sample_sel = self.general_settings["samplesel"])
+        task_tree, xps = task_manager._build_tree()
         # Save the task graph for the user
         dask.visualize(task_tree, filename=f'{self.outdir}/task_graph.png')
-        
         self.graph = task_tree
+
         logger.info(f"Number of histograms to produce is {len(self.graph)}")
         self.xps = xps
 
@@ -86,7 +90,7 @@ class Processor(object):
         Args:
             hists_dict (Dict): Mapping of observable -> sample_region_syst_template -> histogram
         '''
-
+        os.makedirs(self.outdir, exist_ok=True)
         for obs in list(hists_dict.keys()):
             fname = f'{obs}.pkl'
             with open(f"{self.outdir}/{fname}", "wb") as f:
@@ -109,3 +113,6 @@ class Processor(object):
                             if not h_wanted:    continue   
                             
                             yield CrossProduct(sample, region, obs, syst, template,)
+
+
+

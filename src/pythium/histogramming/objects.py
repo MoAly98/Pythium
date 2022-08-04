@@ -28,6 +28,7 @@ class CrossProduct(object):
     def __init__(self, sample, region, obs, syst, template, ):
         self._xp = (sample, region, obs, syst, template)
         self.names = (sample.name, region.name, obs.name, syst.name if syst is not None else syst, template)
+        self.title = '_'.join([n if n is not None else 'NONE' for n in self.names])
     
     def __getitem__(self, item):    
         if item == 'sample':
@@ -48,6 +49,22 @@ class CrossProduct(object):
     
     def __iter__(self):
         return iter(self._xp)
+    
+    def __hash__(self):
+        return hash(self.names)
+    def __eq__(self, other):
+        return self.title == other.title
+    def __lt__(self, other):
+        return self.title < other.title
+    def __gt__(self, other):
+        return self.title > other.title
+    def __le__(self, other):
+         return self.title <= other.title
+    def __ge__(self, other):
+         return self.title >= other.title
+    def __cmp__(self, other):
+        return cmp(self.title, other.title)
+        
 
 
 
