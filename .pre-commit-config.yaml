@@ -3,4 +3,4 @@ repos:
     rev: 22.6.0
     hooks:
     -   id: black
-        args: [--extend-exclude="(.*misc.*/.*.py|.*config.*/.*.py|.*config.*.py|docs/source/.*.py|utils/.*.py|setup.py)"]
+        exclude: "(.*misc.*/.*.py|.*config.*/.*.py|.*config.*.py|docs/source/.*.py|utils/.*.py|setup.py)"
