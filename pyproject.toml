@@ -52,7 +52,6 @@ dev  = [
 tests = [
         "pytest",
         "pytest-cov>>=2.6.2",
-        "unittest",
         "check-manifest",
         "flake8",
         "flake8",
