@@ -23,7 +23,7 @@ jobs:
     - name: Install Pythium and dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install .[test]
+        python -m pip install .[tests]
     - name: Static code analysis with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
