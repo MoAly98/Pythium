@@ -30,15 +30,13 @@ class Functor(object):
     @property
     def func(self):
         return self._func
-    @property
-    def label(self):
-        return self._label
+
     @property
     def argtypes(self):
         return self._argtypes
 
     @property
-    def vardict(self) -> str:
+    def vardict(self) -> Dict:
         return self._vardict
     @vardict.setter
     def vardict(self, thedict: Dict):

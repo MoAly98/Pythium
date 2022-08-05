@@ -7,14 +7,13 @@ logger = logger.ColoredLogger()
 
 AlgType = Union[Callable[..., 'Branch'], str]
 AlgArgs = Optional[List[Union[str, float, int]]]
-T = TypeVar('T')
-AlgArgsTypes = Optional[List[Type[T]]]
+AlgArgsTypes = Optional[List[Union[str, float, int]]]
 
 class Branch:
     def __init__(self, out_name: str, alg: AlgType, 
                  args: AlgArgs = None, args_types: AlgArgsTypes = None, 
                  branch_type: Optional[str] = 'on',
-                 args_from: List[str] = None,
+                 args_from: Optional[List[str]] = None,
                  drop: bool = False,
                  isprop: bool = False):
         self.write_name = out_name

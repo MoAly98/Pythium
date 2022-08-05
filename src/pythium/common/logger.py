@@ -62,8 +62,8 @@ class ShutdownHandler(logging.StreamHandler):
             sys.exit(1)
 
 class ColoredLogger(logging.Logger):
-    def __init__(self, name=False):
-        if name:
+    def __init__(self, name=''):
+        if name != '':
             self.FORMAT = "[$BOLD%(name)-s:%(levelname)-s$RESET]  %(message)s"
         else:
             self.FORMAT = "[$BOLD%(module)-s:%(levelname)-s$RESET]  %(message)s"
