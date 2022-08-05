@@ -60,13 +60,10 @@ class Processor(object):
         # Intitalise a task manager to handle how the task graph should look
         task_manager = _TaskManager(input_manager, sample_sel = self.general_settings["samplesel"])
         task_tree, xps = task_manager._build_tree()
-        # Save the task graph for the user
-        dask.visualize(task_tree, filename=f'{self.outdir}/task_graph.png')
         self.graph = task_tree
-
-        logger.info(f"Number of histograms to produce is {len(self.graph)}")
         self.xps = xps
-
+        logger.info(f"Number of histograms to produce is {len(self.graph)}")
+    
     def run(self):
         '''
         Method to compute the histograms
@@ -90,6 +87,9 @@ class Processor(object):
         Args:
             hists_dict (Dict): Mapping of observable -> sample_region_syst_template -> histogram
         '''
+        # Save the task graph for the user
+        dask.visualize(self.graph, filename=f'{self.outdir}/task_graph.png')
+        # Save the histograms
         os.makedirs(self.outdir, exist_ok=True)
         for obs in list(hists_dict.keys()):
             fname = f'{obs}.pkl'

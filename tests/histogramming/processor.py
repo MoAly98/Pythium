@@ -48,16 +48,16 @@ class TestProcessor(unittest.TestCase):
     def test_processor_create(self,):
 
         # Prepare object instances to run a processor
-        mock_observable_instance = Observable('observable','observable', _Binning([0., 1.]), dataset = 'empty_tree')
+        mock_observable_instance = Observable('observable','observable', _Binning([0., 1.]), dataset = 'tree')
         mock_region_instance = Region('region',Selection(lambda x: x, ['cut_on']))
         mock_syst_instance = Systematic('syst', 'SHAPENORM' , 'up' )
-        mock_sample_instance = Sample('empty_sample', 'tag', '/path/to/ntuples/', {})
+        mock_sample_instance = Sample('sample', 'tag', '/path/to/ntuples/', {})
         
         processor_instance = processor.Processor( samples =     [mock_sample_instance], 
                                                   regions =     [mock_region_instance], 
                                                   systematics = [mock_syst_instance],
                                                   observables = [mock_observable_instance],
-                                                  general = { 'indir': [f'{test_dir}/data/'],
+                                                  general = { 'indir': [f'./tests/histogramming/data/'],
                                                                'frompythium': True,
                                                                'informat': 'parquet',
                                                                'samplesel': False,
@@ -105,7 +105,7 @@ class TestProcessor(unittest.TestCase):
                                                   regions =     [mock_region_instance], 
                                                   systematics = [mock_syst_instance],
                                                   observables = [mock_observable_instance],
-                                                  general = { 'indir': [f'{test_dir}/data/'],
+                                                  general = { 'indir': [f'./tests/histogramming/data/'],
                                                                'frompythium': True,
                                                                'informat': 'parquet',
                                                                'samplesel': False,

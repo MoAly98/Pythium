@@ -520,8 +520,8 @@ class _TaskManager(object):
         # Mapping to store all filled histograms from all paths
         # contributing to each XP
         xp_to_hists = defaultdict(list)
-
         for path, _ in paths_to_xp.items():
+            
             xps = paths_to_xp[path]
             variables = path_to_vars[path]
             # Retrieve all relevant data from input path
