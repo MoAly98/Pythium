@@ -1,8 +1,8 @@
-name: CI
+name: ci
 
 on:
   push:
-    branches: [ maly-test_ci]
+    branches: [ maly-dev ]
   pull_request:
     branches: [ master ]
 
