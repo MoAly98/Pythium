@@ -2,9 +2,9 @@ name: ci
 
 on:
   push:
-    branches: [ maly-dev ]
+    branches: [ maly_test_ci ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   test:
