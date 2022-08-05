@@ -100,3 +100,8 @@ extend-exclude = '''
 )
 
 '''
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov=src/pythium --cov-report html --cov-report term-missing --cov-branch -rsx --ignore-glob=misc/*"
+filterwarnings = ["ignore::DeprecationWarning"]
