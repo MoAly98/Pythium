@@ -13,7 +13,6 @@ from typing import List, Dict, Tuple
 import glob, os
 import re
 import time
-import psutil
 import gc
 #============ thbbanalysis Imports
 from pythium.common.branches import *
@@ -248,7 +247,7 @@ def read(chunk_files: List[str], trees_to_branch_names: Dict[str, str], skipsamp
             else:
                 logger.info(f"Using uproot.concatenate .... ")
                 data = uproot.concatenate(chunk_tree, branches, library='ak')
-                logger.info(f"Storing data memory_info().rss (GB) = {psutil.Process(os.getpid()).memory_info().rss / 1024 ** 3}")
+                #logger.info(f"Storing data memory_info().rss (GB) = {psutil.Process(os.getpid()).memory_info().rss / 1024 ** 3}")
                 chunk_data[tree] = data
 
         except uproot.exceptions.KeyInFileError as uproot_except:

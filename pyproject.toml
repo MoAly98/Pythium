@@ -26,20 +26,49 @@ classifiers = [
 ]
 
 dynamic = ["version"]
-dependencies = ["hist",
+dependencies = [
+                "hist",
                 "awkward>=1.0",
                 "uproot4>=4.0",
                 "mplhep",
                 "numpy",
-                "h5py==3.6.0",
-                "psutil",
                 "beartype",
                 "schema",
                 "dask",
                 "distributed",
-                "vector", 
                 "graphviz"
                 ]
+
+
+[project.optional-dependencies]
+physics = ["vector"]
+dev  = [
+        "h5py==3.6.0",
+        "psutil",
+        "vector", 
+        "pyarrow"
+        ]
+
+tests = [
+        "pytest",
+        "pytest-cov>>=2.6.2",
+        "unittest",
+        "check-manifest",
+        "flake8",
+        "flake8",
+        "flake8-bugbear",
+        "flake8-import-order",
+        "flake8-print",
+        "mypy",
+        "black",
+        ]
+
+docs = [
+        "sphinx",
+        "sphinx-rtd-theme",
+        "sphinx-autodoc-typehints",
+        ]
+
 
 [project.urls]
 homepage =  "https://github.com/MoAly98/Pythium/tree/main"
