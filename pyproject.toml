@@ -85,3 +85,18 @@ version = {attr = "pythium.__version__"}
 [project.scripts]
 pythium-sklim = "pythium.scripts.sklim:main"
 pythium-hist = "pythium.scripts.histogram:main"
+
+[tool.black]
+line-length = 100
+target-versions = ["py36","py37","py38","py39","py310"]
+extend-exclude = '''
+( 
+   ^/.*misc.*/*.py
+   | ^/.*config.*/*.py
+   | .*config.*.py
+   | ^/docs/source/.*.py
+   | ^/utils/.*.py
+   | setup.py
+)
+
+'''
