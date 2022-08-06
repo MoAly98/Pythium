@@ -42,7 +42,9 @@ class Functor(object):
     def vardict(self, thedict: Dict):
         self._vardict = thedict
 
-
+    def __eq__(self, other):
+        return (self.func == other.func, self.args == other.args, self.req_vars == other.req_vars)
+    
     def evaluate(self, data):
         
         self.vardict = {rv: data[rv] for rv in self.req_vars}

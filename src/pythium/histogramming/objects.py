@@ -229,7 +229,8 @@ class Region(object):
 
     @beartype
     def __init__(
-        self, name: str, 
+        self, 
+        name: str, 
         selection: Selection,
         title: str = None, 
         samples: Optional[List[str]] = None, 
@@ -275,6 +276,9 @@ class Region(object):
     @property
     def excluded_samples(self):
         return self._excluded_samples
+    
+    def __eq__(self, other):
+        return (self.name == other.name and  self.sel == other.sel)
 
 TTemplate = Union[str, Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]]
 class Systematic(object):
@@ -322,6 +326,9 @@ class Systematic(object):
         if self.type not in ['shape', 'norm', 'shapenorm']:
             logger.error(f"Systematic {self.name} has invalid type {self.type}. Options are shape, norm and shapenorm")
         
+        def __eq__(self, other):
+            return (self.name == other.name and  self.up == other.up and self.down == other.down)
+
 class WeightSyst(Systematic):
     
     TWeightSyst = TypeVar("TWeightSyst", bound="WeightSyst")
