@@ -96,10 +96,10 @@ class _InputManager(object):
                     obs_vars.extend([Observable(obs.weights, obs.weights, dummy_binning, obs.dataset) ] )
             
             # If a region is defined, then a selector is defined and we should get variables required to apply cuts
-            region_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in region.sel.req_vars ] 
+            region_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in region.sel.req_vars  if reqvar not in new_vars_names] 
             # if user flags that a Sample selection is applied at histogramming stage, get required variables to apply cuts
             if self.sample_sel:
-                sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars ]
+                sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars  if reqvar not in new_vars_names]
             
             # If the cross product involves a  weight systematic, need to grab required variables
             if isinstance(systematic, WeightSyst):
@@ -107,7 +107,7 @@ class _InputManager(object):
 
                 # If the weight is defined by a function then we need the args for this function
                 if isinstance(template, Functor):
-                    syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars ] 
+                    syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars  if reqvar not in new_vars_names] 
                 # else, the weight is just in the input or will be built as a new variable
                 else:
                     if template not in new_vars_names:                    
