@@ -371,8 +371,8 @@ class WeightSyst(Systematic):
         cls, 
         name: str, 
         shape_or_norm: str, 
-        up: Optional[str], 
-        down: Optional[str], 
+        up: Optional[str] = None, 
+        down: Optional[str] = None, 
         *sys_args, 
         **sys_kwargs
     ) -> TWeightSyst:
@@ -394,8 +394,8 @@ class WeightSyst(Systematic):
 class NTupSyst(Systematic):
     def __init__(self, *args, **kwargs):
         super(NTupSyst, self).__init__(*args, **kwargs)
-        self.up = [self.up] if not isinstance(self.up, list) else [self.up]
-        self.down = [self.down] if not isinstance(self.down, list) else [self.down]
+        self.up = [self.up] if (not isinstance(self.up, list) and self.up is not None) else self.up
+        self.down = [self.down] if (not isinstance(self.down, list) and self.down is not None) else self.down
 
 class TreeSyst(Systematic):
     def __init__(self, *args, **kwargs):
