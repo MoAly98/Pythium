@@ -74,10 +74,10 @@ class _InputManager(object):
         # Declare the map to be returned 
         xp_to_req = defaultdict(list)
         new_vars_names= [ xp["observable"].name for xp in self.xps  if xp["observable"].builder.new ]
-        for xp in self.xps:
 
-            sample, region, obs, systematic, template = xp
+        for xp in self.xps:
             
+            sample, region, obs, systematic, template = xp
             # Declare lists for different orirgins of required variables
             required_variables = []
             obs_vars, _region_sel_vars, sample_sel_vars, syst_vars = [],[],[],[]
@@ -96,10 +96,10 @@ class _InputManager(object):
                     obs_vars.extend([Observable(obs.weights, obs.weights, dummy_binning, obs.dataset) ] )
             
             # If a region is defined, then a selector is defined and we should get variables required to apply cuts
-            region_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in region.sel.req_vars ] 
+            region_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in region.sel.req_vars  if reqvar not in new_vars_names] 
             # if user flags that a Sample selection is applied at histogramming stage, get required variables to apply cuts
             if self.sample_sel:
-                sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars ]
+                sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars  if reqvar not in new_vars_names]
             
             # If the cross product involves a  weight systematic, need to grab required variables
             if isinstance(systematic, WeightSyst):
@@ -107,7 +107,7 @@ class _InputManager(object):
 
                 # If the weight is defined by a function then we need the args for this function
                 if isinstance(template, Functor):
-                    syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars ] 
+                    syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars  if reqvar not in new_vars_names] 
                 # else, the weight is just in the input or will be built as a new variable
                 else:
                     if template not in new_vars_names:                    
@@ -564,9 +564,8 @@ class _TaskManager(object):
         
         make_hist: bool = True
         make_hist &= sample_in_region(sample, region)
-        
         make_hist &= template_in_sample(sample, template)
-        
+
         if template == 'nom':   return make_hist
         
         make_hist &= observable_in_region(observable, region)
@@ -617,5 +616,6 @@ def systematic_has_shape(systematic):
     else:   return False
 
 def template_is_symm(systematic, template):
-    if getattr(systematic, template) in (None, [None]) and systematic.symmetrize: return False
+    templ = getattr(systematic, template)
+    if templ is None and not systematic.symmetrize: return False
     else:   return True

@@ -229,7 +229,8 @@ class Region(object):
 
     @beartype
     def __init__(
-        self, name: str, 
+        self, 
+        name: str, 
         selection: Selection,
         title: str = None, 
         samples: Optional[List[str]] = None, 
@@ -275,6 +276,9 @@ class Region(object):
     @property
     def excluded_samples(self):
         return self._excluded_samples
+    
+    def __eq__(self, other):
+        return (self.name == other.name and  self.sel == other.sel)
 
 TTemplate = Union[str, Dict[str, Union[Callable,  List[Union[str, int, float, Dict, None]]]]]
 class Systematic(object):
@@ -322,6 +326,9 @@ class Systematic(object):
         if self.type not in ['shape', 'norm', 'shapenorm']:
             logger.error(f"Systematic {self.name} has invalid type {self.type}. Options are shape, norm and shapenorm")
         
+        def __eq__(self, other):
+            return (self.name == other.name and  self.up == other.up and self.down == other.down)
+
 class WeightSyst(Systematic):
     
     TWeightSyst = TypeVar("TWeightSyst", bound="WeightSyst")
@@ -364,8 +371,8 @@ class WeightSyst(Systematic):
         cls, 
         name: str, 
         shape_or_norm: str, 
-        up: Optional[str], 
-        down: Optional[str], 
+        up: Optional[str] = None, 
+        down: Optional[str] = None, 
         *sys_args, 
         **sys_kwargs
     ) -> TWeightSyst:
@@ -387,8 +394,8 @@ class WeightSyst(Systematic):
 class NTupSyst(Systematic):
     def __init__(self, *args, **kwargs):
         super(NTupSyst, self).__init__(*args, **kwargs)
-        self.up = [self.up] if not isinstance(self.up, list) else [self.up]
-        self.down = [self.down] if not isinstance(self.down, list) else [self.down]
+        self.up = [self.up] if (not isinstance(self.up, list) and self.up is not None) else self.up
+        self.down = [self.down] if (not isinstance(self.down, list) and self.down is not None) else self.down
 
 class TreeSyst(Systematic):
     def __init__(self, *args, **kwargs):

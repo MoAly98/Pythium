@@ -84,12 +84,11 @@ class TestProcessor():
                                  'sum': {'_make_histogram'}}
         mock_xps = [
                     CrossProduct(mock_sample_instance,mock_region_instance,mock_observable_instance,mock_syst_instance,'up'),
-                    CrossProduct(mock_sample_instance,mock_region_instance,mock_observable_instance,mock_syst_instance,'down'),
                     CrossProduct(mock_sample_instance,mock_region_instance,mock_observable_instance,None,'nom'),
                     ]
         # ======================= Assertions =============================
-        assert len(processor_instance.graph)  == 3
-        assert len(processor_instance.xps) == 3
+        assert len(processor_instance.graph)  == 2
+        assert len(processor_instance.xps) == 2
         assert sorted(processor_instance.xps) == sorted(mock_xps)
         
         for i, job in enumerate(processor_instance.graph):
@@ -133,12 +132,13 @@ class TestProcessor():
     
         expected_result = {
             'observable1':   {'sample_region_syst_up': h,
-                              'sample_region_syst_down': h,
                               'sample_region_nom': h}
-        }
+            }
         
         # ======================= Assertions =============================
         assert expected_result == dict(observable_uid_hist)
+        for obs, combo_to_hist in observable_uid_hist.items():
+            assert all('down' not in k for k in list(dict(combo_to_hist).keys()))
 
 def remove_tokens(dask_depend):
     clean_dask_dep = {}
