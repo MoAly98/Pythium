@@ -64,6 +64,11 @@ class CrossProduct(object):
          return self.title >= other.title
     def __cmp__(self, other):
         return cmp(self.title, other.title)
+    def __repr__(self):
+        return self.title
+    def __str__(self):
+        return self.title
+        
         
 
 
@@ -208,6 +213,20 @@ class Observable(object):
     def __eq__(self, other):
         if not isinstance(other, type(self)): logger.error(f"Comparing an instance of {type(self)} with {type(other)} is not supported")
         return self.name == other.name
+    def __repr__(self):
+        return self.name
+    def __str__(self):
+        return self.name
+    def __lt__(self, other):
+        return self.name < other.name
+    def __gt__(self, other):
+        return self.name > other.name
+    def __le__(self, other):
+         return self.name <= other.name
+    def __ge__(self, other):
+         return self.name >= other.name
+    def __cmp__(self, other):
+        return cmp(self.name, other.name)
 
 class Region(object):
     '''

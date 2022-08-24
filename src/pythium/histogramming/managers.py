@@ -46,6 +46,7 @@ class _InputManager(object):
                         }
         self.xps = xps
         self.indirs     = general_settings["indir"]
+        self.indirs     = self.indirs if isinstance(self.indirs , list) else [self.indirs]
         self.from_pyth  = general_settings["frompythium"]
         self.ext        = general_settings["informat"]
         self.sample_sel = general_settings["samplesel"]
@@ -100,7 +101,6 @@ class _InputManager(object):
             # if user flags that a Sample selection is applied at histogramming stage, get required variables to apply cuts
             if self.sample_sel:
                 sample_sel_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in sample.sel.req_vars  if reqvar not in new_vars_names]
-            
             # If the cross product involves a  weight systematic, need to grab required variables
             if isinstance(systematic, WeightSyst):
                 template = getattr(systematic, template)
@@ -110,12 +110,12 @@ class _InputManager(object):
                     syst_vars =  [ Observable(reqvar, reqvar, dummy_binning, obs.dataset) for reqvar in template.req_vars  if reqvar not in new_vars_names] 
                 # else, the weight is just in the input or will be built as a new variable
                 else:
-                    if template not in new_vars_names:                    
+                    if template not in new_vars_names:   
                         syst_vars = [ Observable(template, template, dummy_binning, obs.dataset) ]  
-            
+                        
             # Required variables is the combination of all variables we found are needed
             required_variables.extend(obs_vars+region_sel_vars+sample_sel_vars+syst_vars)
-            xp_to_req[xp] = list(set(required_variables)) # Remove duplicates
+            xp_to_req[xp] = sorted(list(set(required_variables))) # Remove duplicates
 
             
         return xp_to_req
@@ -149,7 +149,7 @@ class _InputManager(object):
                 obs_dataset = observable.dataset
                 # Build a regex path to be globbed using the file-extenstion provided by user and
                 # all the paths the user told us to look in
-                paths = [f"{path}/{sample_name}*{obs_dataset}*.{self.ext}".replace('//','/') for path in self.indirs]
+                paths = [f"{path}/{sample_name}_*{obs_dataset}*.{self.ext}".replace('//','/') for path in self.indirs]
                 
                 # If this is not a nominal histogram, then we may have NTuple or Tree variations
                 if template != 'nom':
@@ -159,25 +159,24 @@ class _InputManager(object):
                         sys_dirs =    getattr(systematic, "where", [None])
                         sys_samples = getattr(systematic, template)
                         if sys_dirs == [None]:
-                            paths = [f"{indir}/{s_samp}*{obs_dataset}*.{self.ext}".replace('//','/') for indir in indirs for s_samp in sys_samples]
+                            paths = [f"{indir}/{s_samp}_*{obs_dataset}*.{self.ext}".replace('//','/') for indir in self.indirs for s_samp in sys_samples]
                         else:
-                            paths = [f"{s_dir}/{s_samp}*{obs_dataset}*.{self.ext}".replace('//','/') for s_dir in sys_dirs for s_samp in sys_samples]
+                            paths = [f"{s_dir}/{s_samp}_*{obs_dataset}*.{self.ext}".replace('//','/') for s_dir in sys_dirs for s_samp in sys_samples]
                     
                     # If we have a Tree variation, then we want to access a different dataset but same sample 
                     elif (isinstance(systematic, TreeSyst)):
                         syst_dataset = getattr(systematic, template) 
-                        paths = [f"{indir}/{sample_name}*{syst_dataset}*.{self.ext}".replace('//','/') for indir in self.indirs]
+                        paths = [f"{indir}/{sample_name}_*{syst_dataset}*.{self.ext}".replace('//','/') for indir in self.indirs]
 
                 # Glob and remove duplicates
-                paths = list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ]))
+                paths = sorted(list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ])))
                 xp_to_paths[xp] = paths
                
             else:
                 '''
                 TODO:: Assume user defined (somehow?) #Custom? some supported special types? decoreator for custom?
                 '''
-                logger.warning("Only outputs from Pythium currently supported")
-                pass
+                logger.error("Only outputs from Pythium currently supported")
 
         return xp_to_paths
 
