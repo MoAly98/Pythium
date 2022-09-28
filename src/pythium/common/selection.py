@@ -11,6 +11,14 @@ class Selection(Functor):
         super(Selection, self).__init__(*args, **kwargs)
         self._label = kwargs.get("label", None) # to print on plots
 
+    @property 
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self,arg):
+        self._label = arg 
+
 
     def combined_label(self):
         combine_cuts = ''
