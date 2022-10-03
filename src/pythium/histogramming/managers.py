@@ -149,7 +149,7 @@ class _InputManager(object):
                 obs_dataset = observable.dataset
                 # Build a regex path to be globbed using the file-extenstion provided by user and
                 # all the paths the user told us to look in
-                paths = [f"{path}/{sample_name}_*_{obs_dataset}.{self.ext}" for path in self.indirs]
+                paths = [f"{path}/{sample_name}__*__{obs_dataset}*.{self.ext}".replace('//','/') for path in self.indirs]
                 
                 # If this is not a nominal histogram, then we may have NTuple or Tree variations
                 if template != 'nom':
@@ -159,14 +159,14 @@ class _InputManager(object):
                         sys_dirs =    getattr(systematic, "where", [None])
                         sys_samples = getattr(systematic, template)
                         if sys_dirs == [None]:
-                            paths = [f"{indir}/{s_samp}_*_{obs_dataset}.{self.ext}" for indir in indirs for s_samp in sys_samples]
+                            paths = [f"{indir}/{s_samp}__*__{obs_dataset}*.{self.ext}".replace('//','/') for indir in indirs for s_samp in sys_samples]
                         else:
-                            paths = [f"{s_dir}/{s_samp}_*_{obs_dataset}.{self.ext}" for s_dir in sys_dirs for s_samp in sys_samples]
+                            paths = [f"{s_dir}/{s_samp}__*__{obs_dataset}*.{self.ext}".replace('//','/') for s_dir in sys_dirs for s_samp in sys_samples]
                     
                     # If we have a Tree variation, then we want to access a different dataset but same sample 
                     elif (isinstance(systematic, TreeSyst)):
                         syst_dataset = getattr(systematic, template) 
-                        paths = [f"{indir}/{sample_name}_*_{syst_dataset}.{self.ext}" for indir in self.indirs]
+                        paths = [f"{indir}/{sample_name}__*__{syst_dataset}*.{self.ext}".replace('//','/') for indir in self.indirs]
 
                 # Glob and remove duplicates
                 paths = list(set([p for path in paths for p in glob(path) if not os.path.isdir(p) ]))
