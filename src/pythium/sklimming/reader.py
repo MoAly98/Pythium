@@ -160,7 +160,7 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
                 
                 if len(chunk_data)!=0:
                     logger.info(f"Writing chunk data")
-                    outfile = writer.write_sample(chunk_data, sample, cfg , suffix='_chunk'+str(out_idx))
+                    outfile = writer.write_sample(chunk_data, sample, cfg , suffix='__chunk'+str(out_idx))
                     out_idx += 1
                     done += 1
 

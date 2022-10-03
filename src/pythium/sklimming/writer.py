@@ -23,7 +23,7 @@ def write_sample(sample_data, sample, cfg, ext='H5', suffix=''):
     outfile =  f"{outdir}/{sample_name}{suffix}"
     if ext == 'h5':        
         for tree, data in sample_data.items():
-            outfile += f"_{tree}.h5"
+            outfile += f"__{tree}.h5"
             with h5py.File(outfile, "w") as file:
                 packed_data = ak.packed(data)
                 group = file.create_group(tree)
@@ -31,18 +31,18 @@ def write_sample(sample_data, sample, cfg, ext='H5', suffix=''):
                 group.attrs["form"] = form.tojson()
                 group.attrs["length"] = length
                 group.attrs["sel"] = "MySel"
-            outfile = outfile.replace(f"_{tree}.h5", "")
+            outfile = outfile.replace(f"__{tree}.h5", "")
     elif ext == 'root':
         pass 
     elif ext == 'parquet':
         for tree, data in sample_data.items():
-            outfile += f"_{tree}.parquet"
+            outfile += f"__{tree}.parquet"
             ak.to_parquet(data, outfile)
-            outfile = outfile.replace(f"_{tree}.parquet", "")            
+            outfile = outfile.replace(f"__{tree}.parquet", "")            
     elif ext == "json":
         for tree, data in sample_data.items():
-            outfile += f"_{tree}.json"
+            outfile += f"__{tree}.json"
             ak.to_json(data, outfile)
-            outfile = outfile.replace(f"_{tree}.json", "")
+            outfile = outfile.replace(f"__{tree}.json", "")
     
     return outfile
