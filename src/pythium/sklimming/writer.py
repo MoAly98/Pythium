@@ -1,4 +1,4 @@
-''' 
+'''
 author: Mohamed Aly (maly@cern.ch)
 Brief: Functions to take in awkward arrays and set them out to be dumped to various formats
 
@@ -21,7 +21,7 @@ def write_sample(sample_data, sample, cfg, ext='H5', suffix=''):
     ext = cfg['settings']['dumptoformat']
     outdir.mkdir(parents=True, exist_ok=True)
     outfile =  f"{outdir}/{sample_name}{suffix}"
-    if ext == 'h5':        
+    if ext == 'h5':
         for tree, data in sample_data.items():
             outfile += f"__{tree}.h5"
             with h5py.File(outfile, "w") as file:
@@ -33,16 +33,18 @@ def write_sample(sample_data, sample, cfg, ext='H5', suffix=''):
                 group.attrs["sel"] = "MySel"
             outfile = outfile.replace(f"__{tree}.h5", "")
     elif ext == 'root':
-        pass 
+        pass
     elif ext == 'parquet':
         for tree, data in sample_data.items():
             outfile += f"__{tree}.parquet"
+            for key in ak.fields(data): #remove events with missing data
+                data = data[~ak.is_none(data[key])]
             ak.to_parquet(data, outfile)
-            outfile = outfile.replace(f"__{tree}.parquet", "")            
+            outfile = outfile.replace(f"__{tree}.parquet", "")
     elif ext == "json":
         for tree, data in sample_data.items():
             outfile += f"__{tree}.json"
             ak.to_json(data, outfile)
             outfile = outfile.replace(f"__{tree}.json", "")
-    
+
     return outfile
