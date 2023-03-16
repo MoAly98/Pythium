@@ -10,13 +10,11 @@ import awkward as ak
 import numpy as np
 #============== System and Python Imports
 from typing import List, Dict, Tuple
-import os
+import os, glob
 import re
 import time
 import psutil
 import gc
-import XRootD.client as client
-import XRootD.client.glob_funcs as glob
 #============ thbbanalysis Imports
 from pythium.common.branches import *
 from pythium.common.tools import combine_list_of_dicts
@@ -24,7 +22,12 @@ from pythium.common.tools import combine_list_of_dicts
 from pythium.sklimming import writer
 from pythium.common import tools
 
-
+try:
+    import XRootD.client as client
+    import XRootD.client.glob_funcs as remote_glob
+    remote_glob_imported = True
+except ImportError:
+    remote_glob_imported = False
 
 CfgType = Dict[str, Dict[str, Union[str,bool,int,float]]]
 SampleDataType = Dict[str, List[Union[str,float,int]]]
@@ -32,11 +35,21 @@ CutFuncType = Callable[..., "ak.Array"]
 CutFuncArgsType = Dict[str,List[Union[str,float,int]]]
 BranchStatusType = Dict[str,Dict[str,List[Union["Branch",str]]]]
 
-def get_file_size(file)->float:
-    with client.File() as f:
-        f.open(file)
-        info=f.stat()
-        return info[1].size*1e-9
+def get_file_size(file: str)->float:
+    '''
+    Find the size of a file in GB from its filename
+    Args:
+        file:  A string containing a filename
+    Return:
+        A float of the size of the file in GB
+    '''
+    if remote_glob_imported:
+        with client.File() as f:
+            f.open(file)
+            info=f.stat()
+            return info[1].size*1e-9
+    else:
+        return os.path.getsize(file)*1e-9
 
 def decorate_sample_tag(tags:List[str])->List[str]:
     '''
@@ -46,7 +59,7 @@ def decorate_sample_tag(tags:List[str])->List[str]:
     Return:
         a list with decorated elements
     '''
-    return [f'{tag}*' for tag in tags]
+    return [f'*{tag}*' for tag in tags]
 
 
 def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
@@ -58,10 +71,14 @@ def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
     Return:
         paths: A list of full paths up to sample tags
     '''
-    paths = [((str(loc)+'/') if str(loc) != '.' else '') +tag for tag in tags for loc in locations]
-    #paths = [str(loc)+'/'+tag for tag in tags for loc in locations/pytths = [str(loc)+'/'+tag for tag in tags for loc in locations]
-    dirpaths = [p+'/.*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
-    fpaths = list(set([path  for path in paths for p in glob.glob(path) if not os.path.isdir(p) ]))
+    if remote_glob_imported:
+        paths = [((str(loc)+'/') if str(loc) != '.' else '') +tag for tag in tags for loc in locations]
+        dirpaths = [p+'/.*'  for path in paths for p in remote_glob.glob(path) if os.path.isdir(p)]
+        fpaths = list(set([path  for path in paths for p in remote_glob.glob(path) if not os.path.isdir(p) ]))
+    else:
+        paths = [str(loc)+'/'+tag for tag in tags for loc in locations]
+        dirpaths = [p+'/.*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
+        fpaths = list(set([path  for path in paths for p in glob.glob(path) if not os.path.isdir(p) ]))
     paths = dirpaths+fpaths
 
     return paths
@@ -139,7 +156,12 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
     out_idx = 0
     for path in paths:
         logger.info(f'Processing data from the following path: \n {path}')
-        files = glob.glob(path) # Get list of files matching path regex
+        
+        if remote_glob_imported:
+            files = remote_glob.glob(path) # Get list of files matching path regex
+        else:
+            files = glob.glob(path)
+            
         if len(files) == 0:
             logger.warning(f"No files were found in {path}, skipping")
             continue
