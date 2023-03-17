@@ -10,7 +10,7 @@ import awkward as ak
 import numpy as np
 #============== System and Python Imports
 from typing import List, Dict, Tuple
-import os, glob
+import os
 import re
 import time
 import psutil
@@ -22,12 +22,13 @@ from pythium.common.tools import combine_list_of_dicts
 from pythium.sklimming import writer
 from pythium.common import tools
 
+REMOTE_GLOBE_IMPORTED = False
 try:
     import XRootD.client as client
-    import XRootD.client.glob_funcs as remote_glob
-    remote_glob_imported = True
+    import XRootD.client.glob_funcs as glob
+    REMOTE_GLOBE_IMPORTED = True
 except ImportError:
-    remote_glob_imported = False
+    import glob
 
 CfgType = Dict[str, Dict[str, Union[str,bool,int,float]]]
 SampleDataType = Dict[str, List[Union[str,float,int]]]
@@ -43,7 +44,7 @@ def get_file_size(file: str)->float:
     Return:
         A float of the size of the file in GB
     '''
-    if remote_glob_imported:
+    if REMOTE_GLOBE_IMPORTED:
         with client.File() as f:
             f.open(file)
             info=f.stat()
@@ -59,7 +60,7 @@ def decorate_sample_tag(tags:List[str])->List[str]:
     Return:
         a list with decorated elements
     '''
-    return [f'*{tag}*' for tag in tags]
+    return [f'{tag}' for tag in tags]
 
 
 def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
@@ -71,14 +72,9 @@ def make_sample_path(locations: List[Path], tags:List[str]) -> List[str]:
     Return:
         paths: A list of full paths up to sample tags
     '''
-    if remote_glob_imported:
-        paths = [((str(loc)+'/') if str(loc) != '.' else '') +tag for tag in tags for loc in locations]
-        dirpaths = [p+'/.*'  for path in paths for p in remote_glob.glob(path) if os.path.isdir(p)]
-        fpaths = list(set([path  for path in paths for p in remote_glob.glob(path) if not os.path.isdir(p) ]))
-    else:
-        paths = [str(loc)+'/'+tag for tag in tags for loc in locations]
-        dirpaths = [p+'/.*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
-        fpaths = list(set([path  for path in paths for p in glob.glob(path) if not os.path.isdir(p) ]))
+    paths = [((str(loc)+'/') if str(loc) != '.' else '') +tag for tag in tags for loc in locations]
+    dirpaths = [p+'/.*'  for path in paths for p in glob.glob(path) if os.path.isdir(p)]
+    fpaths = list(set([path  for path in paths for p in glob.glob(path) if not os.path.isdir(p) ]))
     paths = dirpaths+fpaths
 
     return paths
@@ -157,10 +153,7 @@ def run_workflow(paths: List[str], trees_to_branch_names: Dict[str, str], sample
     for path in paths:
         logger.info(f'Processing data from the following path: \n {path}')
         
-        if remote_glob_imported:
-            files = remote_glob.glob(path) # Get list of files matching path regex
-        else:
-            files = glob.glob(path)
+        files = glob.glob(path) # Get list of files matching path regex
             
         if len(files) == 0:
             logger.warning(f"No files were found in {path}, skipping")
