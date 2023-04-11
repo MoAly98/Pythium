@@ -37,7 +37,7 @@ def write_sample(sample_data, sample, cfg, ext='H5', suffix=''):
     elif ext == 'parquet':
         for tree, data in sample_data.items():
             outfile += f"__{tree}.parquet"
-            data = data[~ak.is_none(data)]
+            data = ak.drop_none(data,axis=0)
             ak.to_parquet(data, outfile)
             outfile = outfile.replace(f"__{tree}.parquet", "")
     elif ext == "json":
